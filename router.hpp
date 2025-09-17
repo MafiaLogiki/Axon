@@ -1,8 +1,16 @@
+#include <boost/beast/http/message_fwd.hpp>
+#include <boost/beast/http/string_body_fwd.hpp>
+#include <boost/beast/http/verb.hpp>
 #include <string_view>
 #include <string>
 #include <tuple>
 #include <type_traits>
 #include <cstdio>
+#include <boost/beast/http.hpp>
+#include <map>
+#include <utility>
+
+using namespace boost::beast;
 
 template <size_t N>
 struct constexpr_string {
@@ -82,16 +90,34 @@ class router {
 
   template <typename f, typename... Args>
   struct function_matches_tuple<f, std::tuple<Args...>> {
-
     static constexpr bool value = std::is_invocable_v<f, Args...>;
   };
 
 public:
+
   template <constexpr_string str, typename handler>
-  consteval void GET(handler h) {
+  consteval void GET(handler&& h) {
+
+    using types = parsed_types_in_tuple<str>;
+
     static_assert(
-      function_matches_tuple<handler, parsed_types_in_tuple<str>>::value,
+      function_matches_tuple<handler, types>::value,
       "Handler signature not match path types"
     );
+    
+    internal_handler_type internal_handler = [h = std::forward<handler>(h)](
+          http::request<http::string_body>&& req,
+          http::response<http::string_body>& res
+        ) 
+    {
+       
+    };
+    
+    handlers[std::make_pair("", http::verb::get)] = internal_handler;
   }
+
+private:
+  using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
+
+  std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 };
