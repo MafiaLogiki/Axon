@@ -32,10 +32,6 @@ struct constexpr_string {
     return {data, N - 1};
   }
 
-  constexpr char operator[](size_t indx) const {
-    return data[indx];
-  }
-
   constexpr size_t size() const {
     return N;
   }
@@ -45,18 +41,18 @@ template <size_t N>
 constexpr_string(const char (&)[N]) -> constexpr_string<N>;
 
 
-class router {
+namespace __router_detail {
 
   template<constexpr_string str, typename = void>
   struct get_type_from_string;
 
   template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int")>> {
     using type = int;
   };
 
   template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string")>> {
     using type = std::string;
   };
 
@@ -92,16 +88,23 @@ class router {
   struct function_matches_tuple<f, std::tuple<Args...>> {
     static constexpr bool value = std::is_invocable_v<f, Args...>;
   };
+}
 
+template <size_t max_endpoints_count = 1024>
+class router_config {
+  static constexpr size_t max_endpoints = max_endpoints_count;
+};
+
+template <typename Config = router_config<>>
+class router {
 public:
-
   template <constexpr_string str, typename handler>
   consteval void GET(handler&& h) {
 
-    using types = parsed_types_in_tuple<str>;
+    using types = __router_detail::parsed_types_in_tuple<str>;
 
     static_assert(
-      function_matches_tuple<handler, types>::value,
+      __router_detail::function_matches_tuple<handler, types>::value,
       "Handler signature not match path types"
     );
     
@@ -110,14 +113,18 @@ public:
           http::response<http::string_body>& res
         ) 
     {
-       
+
     };
     
     handlers[std::make_pair("", http::verb::get)] = internal_handler;
   }
 
 private:
-  using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
+  // using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
+
+  using internal_handler_type = void(*)(http::request<http::string_body>&&, http::response<http::string_body>&);
+  
+  Config config;
 
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 };
