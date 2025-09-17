@@ -36,22 +36,21 @@ struct constexpr_string {
 template <size_t N>
 constexpr_string(const char (&)[N]) -> constexpr_string<N>;
 
-template<constexpr_string str, typename = void>
-struct get_type_from_string;
-
-template <constexpr_string str>
-struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
-  using type = int;
-};
-
-template <constexpr_string str>
-struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
-  using type = std::string;
-};
 
 class router {
 
-public:
+  template<constexpr_string str, typename = void>
+  struct get_type_from_string;
+
+  template <constexpr_string str>
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
+    using type = int;
+  };
+
+  template <constexpr_string str>
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
+    using type = std::string;
+  };
 
   template <constexpr_string str, size_t pos>
   struct path_parser {
@@ -87,6 +86,7 @@ public:
     static constexpr bool value = std::is_invocable_v<f, Args...>;
   };
 
+public:
   template <constexpr_string str, typename handler>
   consteval void GET(handler h) {
     static_assert(
