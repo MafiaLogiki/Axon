@@ -1,6 +1,7 @@
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
+#include <concepts>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -88,6 +89,14 @@ namespace __router_detail {
   struct function_matches_tuple<f, std::tuple<Args...>> {
     static constexpr bool value = std::is_invocable_v<f, Args...>;
   };
+
+  template <constexpr_string str, typename Handler>
+  concept invokable_with_path = requires (Handler handler) {
+    { std::apply(handler, std::declval<parsed_types_in_tuple<str>>()) };
+  };
+
+  template <constexpr_string str, typename Handler>
+  concept match_path = invokable_with_path<str, Handler>;
 }
 
 template <size_t max_endpoints_count = 1024>
@@ -98,17 +107,13 @@ class router_config {
 template <typename Config = router_config<>>
 class router {
 public:
-  template <constexpr_string str, typename handler>
-  consteval void GET(handler&& h) {
+  template <constexpr_string str, typename Handler>
+  requires __router_detail::match_path<str, Handler>
+  void GET(Handler&& h) {
 
     using types = __router_detail::parsed_types_in_tuple<str>;
 
-    static_assert(
-      __router_detail::function_matches_tuple<handler, types>::value,
-      "Handler signature not match path types"
-    );
-    
-    internal_handler_type internal_handler = [h = std::forward<handler>(h)](
+    internal_handler_type internal_handler = [h = std::forward<Handler>(h)](
           http::request<http::string_body>&& req,
           http::response<http::string_body>& res
         ) 
@@ -120,9 +125,7 @@ public:
   }
 
 private:
-  // using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
-
-  using internal_handler_type = void(*)(http::request<http::string_body>&&, http::response<http::string_body>&);
+  using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
   
   Config config;
 

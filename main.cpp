@@ -1,6 +1,8 @@
 #include "router.hpp"
 
-void handler(std::string, int);
+void handler(std::string, int) {
+
+}
 
 int main() {
   router r;
