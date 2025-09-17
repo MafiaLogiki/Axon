@@ -37,16 +37,16 @@ template <size_t N>
 constexpr_string(const char (&)[N]) -> constexpr_string<N>;
 
 template<constexpr_string str, typename = void>
-struct type__;
+struct get_type_from_string;
 
 template <constexpr_string str>
-struct type__<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
-  using value = int;
+struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
+  using type = int;
 };
 
 template <constexpr_string str>
-struct type__<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
-  using value = std::string;
+struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
+  using type = std::string;
 };
 
 class router {
@@ -60,7 +60,7 @@ public:
     static constexpr std::string_view type_and_after = std::string_view(str).substr(pos_start + 1);
     
     static constexpr constexpr_string<type_and_after.size()> type_and_after_structual = type_and_after;
-    using current_type__ = std::conditional_t<pos_start != std::string_view::npos, std::tuple<typename type__<type_and_after_structual>::value>, std::tuple<>>;
+    using current_type__ = std::conditional_t<pos_start != std::string_view::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
 
     using remaining_types__ = path_parser<type_and_after_structual, pos_start>::types;
     
