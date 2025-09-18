@@ -1,7 +1,8 @@
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
-#include <concepts>
+#include <cstdlib>
+#include <sstream>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -97,6 +98,42 @@ namespace __router_detail {
 
   template <constexpr_string str, typename Handler>
   concept match_path = invokable_with_path<str, Handler>;
+
+  template <typename T>
+  T parse_type_value(std::string_view& requested_url, std::string_view& path);
+
+  template <>
+  int parse_type_value<int>(std::string_view& requested_url, std::string_view& path) {
+    size_t pos_start = path.find("{");
+
+    size_t end = requested_url.find("/", pos_start);
+
+    std::string_view number = requested_url.substr(pos_start, end);
+
+    int num = std::atoi(number.data());
+
+    return num;
+  }
+   
+  template <>
+  std::string parse_type_value<std::string>(std::string_view& requested_url, std::string_view& path) {
+    std::ignore = requested_url;
+    std::ignore = path;
+    return "";
+  }
+
+  template <size_t N, typename... Args>
+  void parse_path_types(std::string_view requested_url, std::string_view path, std::tuple<Args...>& result_tuple) {
+
+    if constexpr (N >= sizeof...(Args)) {
+      return; 
+    } else {
+      using head = std::tuple_element_t<N, std::tuple<Args...>>;
+      std::get<N>(result_tuple) = parse_type_value<head>(requested_url, path); 
+      parse_path_types<N + 1>(requested_url, path, result_tuple);
+    }
+  }
+
 }
 
 template <size_t max_endpoints_count = 1024>
@@ -106,28 +143,40 @@ class router_config {
 
 template <typename Config = router_config<>>
 class router {
-public:
+private:
+
   template <constexpr_string str, typename Handler>
-  requires __router_detail::match_path<str, Handler>
-  void GET(Handler&& h) {
+  void register_method(http::verb method, Handler&& h) {
 
-    using types = __router_detail::parsed_types_in_tuple<str>;
+    using tuple_path_types = __router_detail::parsed_types_in_tuple<str>;
 
-    internal_handler_type internal_handler = [h = std::forward<Handler>(h)](
+    internal_handler_type internal_handler = [path = std::string(std::string_view(str)), h = std::forward<Handler>(h)](
           http::request<http::string_body>&& req,
           http::response<http::string_body>& res
         ) 
     {
-
+      tuple_path_types path_types;
+      std::string_view requested_url_view = std::string_view(req.target().data());
+      std::string_view path_view = std::string_view(path);
+       __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
+      std::ignore = res;
     };
     
-    handlers[std::make_pair("", http::verb::get)] = internal_handler;
+    handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
+
+  }
+
+public:
+
+  template <constexpr_string str, typename Handler>
+  requires __router_detail::match_path<str, Handler>
+  void GET(Handler&& h) {
+    register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
 
 private:
   using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
   
   Config config;
-
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 };
