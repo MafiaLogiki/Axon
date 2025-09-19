@@ -2,7 +2,6 @@
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <cstdlib>
-#include <sstream>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -17,6 +16,8 @@ using namespace boost::beast;
 template <size_t N>
 struct constexpr_string {
   char data[N];
+
+  static constexpr size_t npos = -1;
 
   constexpr constexpr_string(const char (&str)[N]) {
     for (size_t i = 0; i < N; ++i) {
@@ -37,6 +38,17 @@ struct constexpr_string {
   constexpr size_t size() const {
     return N;
   }
+  
+
+  constexpr size_t find(char c) const {
+    for (size_t i = 0; i < N; ++i) {
+      if (data[i] == c) {
+        return i;
+      }
+    }
+
+    return npos;
+  }
 };
 
 template <size_t N>
@@ -49,23 +61,31 @@ namespace __router_detail {
   struct get_type_from_string;
 
   template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int")>> {
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
     using type = int;
   };
 
   template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string")>> {
+  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
     using type = std::string;
   };
 
   template <constexpr_string str, size_t pos>
   struct path_parser {
-    static constexpr size_t pos_start = std::string_view(str).find("{");
+    static constexpr size_t pos_start = str.find('{');
     
-    static constexpr std::string_view type_and_after = std::string_view(str).substr(pos_start + 1);
+    static constexpr std::string_view type_and_after = (pos_start != constexpr_string<0>::npos ? std::string_view(str).substr(pos_start + 1) : std::string_view("asdasd"));
     
     static constexpr constexpr_string<type_and_after.size()> type_and_after_structual = type_and_after;
-    using current_type__ = std::conditional_t<pos_start != std::string_view::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
+    // using current_type__ = std::conditional_t<pos_start != constexpr_string::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
+   
+    using current_type__ = decltype([]() {
+      if constexpr (pos_start != constexpr_string<0>::npos) {
+        return std::tuple<typename get_type_from_string<type_and_after_structual>::type>();
+      } else {
+        return std::tuple<>();
+      }
+    }());
 
     using remaining_types__ = path_parser<type_and_after_structual, pos_start>::types;
     
@@ -105,10 +125,14 @@ namespace __router_detail {
   template <>
   int parse_type_value<int>(std::string_view& requested_url, std::string_view& path) {
     size_t pos_start = path.find("{");
+    size_t pos_end_of_type_cell = path.find("}");
 
     size_t end = requested_url.find("/", pos_start);
 
     std::string_view number = requested_url.substr(pos_start, end);
+
+    requested_url.remove_prefix(end);
+    path.remove_prefix(pos_end_of_type_cell);
 
     int num = std::atoi(number.data());
 
@@ -159,6 +183,8 @@ private:
       std::string_view requested_url_view = std::string_view(req.target().data());
       std::string_view path_view = std::string_view(path);
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
+
+      std::apply(h, path_types);
       std::ignore = res;
     };
     
@@ -174,7 +200,6 @@ public:
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
 
-private:
   using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
   
   Config config;
