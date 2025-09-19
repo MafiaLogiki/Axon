@@ -4,7 +4,7 @@
 #include <boost/beast/http/verb.hpp>
 #include <iostream>
 
-void handler(std::string a, int b) {
+void handler(http::request<http::string_body> req, http::response<http::string_body> res, std::string a, int b) {
   std::cout << a << ' ' << b << std::endl;
 }
 

@@ -111,10 +111,16 @@ namespace __router_detail {
   struct function_matches_tuple<f, std::tuple<Args...>> {
     static constexpr bool value = std::is_invocable_v<f, Args...>;
   };
+  
+  template <typename... tuples>
+  using tuple_cat_t = decltype(std::tuple_cat(std::declval<tuples>()...));
 
   template <constexpr_string str, typename Handler>
   concept invokable_with_path = requires (Handler handler) {
-    { std::apply(handler, std::declval<parsed_types_in_tuple<str>>()) };
+    { std::apply(handler, std::declval<
+        tuple_cat_t<
+          std::tuple<const http::request<http::string_body>&, http::response<http::string_body>>, 
+          parsed_types_in_tuple<str>>>()) };
   };
 
   template <constexpr_string str, typename Handler>
@@ -202,7 +208,7 @@ private:
 
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
-      std::apply(h, path_types);
+      std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_types));
       std::ignore = res;
     };
     
