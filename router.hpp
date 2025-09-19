@@ -179,12 +179,6 @@ namespace __router_detail {
 
 }
 
-template <size_t max_endpoints_count = 1024>
-class router_config {
-  static constexpr size_t max_endpoints = max_endpoints_count;
-};
-
-template <typename Config = router_config<>>
 class router {
 private:
 
@@ -222,6 +216,5 @@ public:
 
   using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
   
-  Config config;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 };
