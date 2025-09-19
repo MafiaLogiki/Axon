@@ -187,7 +187,11 @@ private:
 
     using tuple_path_types = __router_detail::parsed_types_in_tuple<str>;
 
-    internal_handler_type internal_handler = [path = std::string(std::string_view(str)), h = std::forward<Handler>(h)](
+    internal_handler_type internal_handler = [path = std::string(std::string_view(str)), 
+                                              h = std::forward<Handler>(h), 
+                                              global_middlewares = std::vector(global_middleware_storage),
+                                              endpoint_middlewares = std::vector(temporary_middleware_storage)]
+        (
           http::request<http::string_body>&& req,
           http::response<http::string_body>& res
         ) 
@@ -202,8 +206,8 @@ private:
       std::ignore = res;
     };
     
+    temporary_middleware_storage.clear();
     handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
-
   }
 
 public:
@@ -214,7 +218,18 @@ public:
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
 
+  using middleware_type = std::function<void(http::request<http::string_body>)>;
+
+  router& with(middleware_type middleware) {
+    temporary_middleware_storage.push_back(middleware);
+    return *this;
+  }
+
   using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
   
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
+
+  std::vector<middleware_type> temporary_middleware_storage;
+  std::vector<middleware_type> global_middleware_storage;
+
 };
