@@ -139,7 +139,6 @@ namespace __router_detail {
       path.remove_prefix(pos_end_of_type_cell + 1);
     }
 
-
     int num;
     std::from_chars(number.data(), number.data() + number.size(), num);
 
@@ -148,9 +147,22 @@ namespace __router_detail {
    
   template <>
   std::string parse_type_value<std::string>(std::string_view& requested_url, std::string_view& path) {
-    std::ignore = requested_url;
-    std::ignore = path;
-    return "";
+    size_t pos_start = path.find("{");
+    size_t pos_end_of_type_cell = path.find("}");
+
+    size_t end = requested_url.find("/", pos_start);
+
+    std::string_view result_string;
+    if (end == std::string_view::npos) {
+      result_string = requested_url.substr(pos_start);
+    } else {
+      result_string = requested_url.substr(pos_start, end - pos_start);
+      requested_url.remove_prefix(end);
+      path.remove_prefix(pos_end_of_type_cell + 1);
+    }
+
+
+    return std::string(result_string.data(), result_string.size());
   }
 
   template <size_t N, typename... Args>

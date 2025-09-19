@@ -4,13 +4,13 @@
 #include <boost/beast/http/verb.hpp>
 #include <iostream>
 
-void handler(int a, int b) {
+void handler(std::string a, int b) {
   std::cout << a << ' ' << b << std::endl;
 }
 
 int main() {
   router r;
-  r.GET<"/api/v1/{int:id}/{int:id2}">(handler);
+  r.GET<"/api/v1/{string:id}/{int:id2}">(handler);
   
   http::request<http::string_body> req;
   http::response<http::string_body> res;
@@ -18,5 +18,5 @@ int main() {
 
   req.target("/api/v1/42/43");
 
-  r.handlers[std::make_pair("/api/v1/{int:id}/{int:id2}", http::verb::get)](std::move(req), res);
+  r.handlers[std::make_pair("/api/v1/{string:id}/{int:id2}", http::verb::get)](std::move(req), res);
 }
