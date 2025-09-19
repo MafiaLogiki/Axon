@@ -1,6 +1,7 @@
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
+#include <charconv>
 #include <cstdlib>
 #include <string_view>
 #include <string>
@@ -134,12 +135,13 @@ namespace __router_detail {
       number = requested_url.substr(pos_start);
     } else {
       number = requested_url.substr(pos_start, end - pos_start + 1);
+      requested_url.remove_prefix(end);
+      path.remove_prefix(pos_end_of_type_cell + 1);
     }
 
-    requested_url.remove_prefix(end);
-    path.remove_prefix(pos_end_of_type_cell + 1);
 
-    int num = std::atoi(number.data());
+    int num;
+    std::from_chars(number.data(), number.data() + number.size(), num);
 
     return num;
   }
