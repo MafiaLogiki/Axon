@@ -209,7 +209,6 @@ private:
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
       std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_types));
-      std::ignore = res;
     };
     
     temporary_middleware_storage.clear();
