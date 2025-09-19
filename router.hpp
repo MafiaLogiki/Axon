@@ -180,11 +180,11 @@ private:
         ) 
     {
       tuple_path_types path_types;
-      std::string_view requested_url_view = std::string_view(req.target().data());
+      std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
-      std::apply(h, path_types);
+      // std::apply(h, path_types);
       std::ignore = res;
     };
     
