@@ -77,7 +77,7 @@ namespace __router_detail {
     static constexpr std::string_view type_and_after = (pos_start != constexpr_string<0>::npos ? std::string_view(str).substr(pos_start + 1) : std::string_view("asdasd"));
     
     static constexpr constexpr_string<type_and_after.size()> type_and_after_structual = type_and_after;
-    // using current_type__ = std::conditional_t<pos_start != constexpr_string::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
+    // using current_type__ = std::conditional_t<pos_start != constexpr_string<0>::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
    
     using current_type__ = decltype([]() {
       if constexpr (pos_start != constexpr_string<0>::npos) {
@@ -129,10 +129,15 @@ namespace __router_detail {
 
     size_t end = requested_url.find("/", pos_start);
 
-    std::string_view number = requested_url.substr(pos_start, end);
+    std::string_view number;
+    if (end == std::string_view::npos) {
+      number = requested_url.substr(pos_start);
+    } else {
+      number = requested_url.substr(pos_start, end - pos_start + 1);
+    }
 
     requested_url.remove_prefix(end);
-    path.remove_prefix(pos_end_of_type_cell);
+    path.remove_prefix(pos_end_of_type_cell + 1);
 
     int num = std::atoi(number.data());
 
@@ -182,9 +187,10 @@ private:
       tuple_path_types path_types;
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
+
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
-      // std::apply(h, path_types);
+      std::apply(h, path_types);
       std::ignore = res;
     };
     

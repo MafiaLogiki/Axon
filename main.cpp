@@ -5,7 +5,7 @@
 #include <iostream>
 
 void handler(int a, int b) {
-  std::cout << a << ' ' << b;
+  std::cout << a << ' ' << b << std::endl;
 }
 
 int main() {
@@ -16,7 +16,7 @@ int main() {
   http::response<http::string_body> res;
   req.method(http::verb::get);
 
-  req.target("/api/v1/42/43");
+  req.target("/api/v1/42/43/");
 
   r.handlers[std::make_pair("/api/v1/{int:id}/{int:id2}", http::verb::get)](std::move(req), res);
 }
