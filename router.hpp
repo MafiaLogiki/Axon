@@ -1,10 +1,12 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/error.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <charconv>
 #include <cstdlib>
 #include <memory>
@@ -187,23 +189,7 @@ namespace __router_detail {
     }
   }
   
-  using tcp = boost::asio::ip::tcp;
-
-  struct http_connection
-    : std::enable_shared_from_this<http_connection>
-  {
-
-    tcp::socket socket_;
-    boost::beast::flat_buffer buffer_{8192};
-
-    http::request<http::dynamic_body> request_;
-    http::response<http::dynamic_body> response_;
-
-    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
-      socket_.get_executor(), std::chrono::seconds(60)
-    };
-
-  };
+  class http_connection;
 }
 
 class router {
@@ -287,7 +273,8 @@ private:
     temporary_middleware_storage.clear();
     handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
   }
-
+  
+  friend class __router_detail::http_connection;
 
 public:
 
@@ -308,11 +295,72 @@ public:
 
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
- 
   boost::asio::io_context& io;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
 
+private:
+  internal_handler_type get_handler(std::string_view requested_url) {
+    return handlers.begin()->second;
+  }
 };
+
+namespace __router_detail {
+  using tcp = boost::asio::ip::tcp;
+
+  class http_connection
+    : std::enable_shared_from_this<http_connection>
+  {
+
+    tcp::socket socket_;
+    boost::beast::flat_buffer buffer_{8192};
+
+    http::request<http::dynamic_body> request_;
+    http::response<http::dynamic_body> response_;
+
+    router& router_;
+
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
+      socket_.get_executor(), std::chrono::seconds(60)
+    };
+    
+    http_connection(tcp::socket socket, router& router_)
+      : socket_(std::move(socket)), router_(router_)
+    {}
+
+    void start() {
+      read_request();
+      check_deadline();
+    }
+
+    void read_request() {
+      auto self = shared_from_this();
+      
+      http::async_read(
+          socket_,
+          buffer_,
+          request_,
+          [self](boost::beast::error_code err, size_t bytes) {
+            boost::ignore_unused(bytes);
+            if (!err) {
+              auto handler = self->router_.get_handler(self->request_.target());
+              handler(std::move(self->request_), self->response_);
+            }
+          });
+    }
+
+    void check_deadline() {
+
+      auto self = shared_from_this();
+
+      deadline_.async_wait(
+          [self](boost::beast::error_code ec)
+          {
+            if (!ec)
+              self->socket_.close();
+          });
+      }
+  };
+}
