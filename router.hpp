@@ -1,4 +1,5 @@
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/error.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
@@ -190,7 +191,63 @@ namespace __router_detail {
     }
   }
   
-  class http_connection;
+  using tcp = boost::asio::ip::tcp;
+  
+  template <typename Router>
+  class http_connection
+    : public std::enable_shared_from_this<http_connection<Router>>
+  {
+
+    tcp::socket socket_;
+    boost::beast::flat_buffer buffer_{8192};
+
+    http::request<http::dynamic_body> request_;
+    http::response<http::dynamic_body> response_;
+
+    Router& router_;
+
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
+      socket_.get_executor(), std::chrono::seconds(60)
+    };
+  public: 
+    http_connection(tcp::socket socket, Router& router_)
+      : socket_(std::move(socket)), router_(router_)
+    {}
+
+    void start() {
+      read_request();
+      check_deadline();
+    }
+
+    void read_request() {
+      auto self = this->shared_from_this();
+      
+      http::async_read(
+          socket_,
+          buffer_,
+          request_,
+          [self](boost::beast::error_code err, size_t bytes) {
+            boost::ignore_unused(bytes);
+            if (!err) {
+              auto handler = self->router_.get_handler(self->request_.target());
+              handler(std::move(self->request_), self->response_);
+            }
+          });
+    }
+
+    void check_deadline() {
+
+      auto self = this->shared_from_this();
+
+      deadline_.async_wait(
+          [self](boost::beast::error_code ec)
+          {
+            if (!ec)
+              self->socket_.close();
+          });
+      }
+  };
+
 }
 
 class router {
@@ -260,7 +317,7 @@ private:
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
 
-      parameter_storage storage = parse_types_for_middleware(requested_url_view, path);
+      parameter_storage storage; // = parse_types_for_middleware(requested_url_view, path);
 
       for(auto& func : global_middlewares) {
         func(storage);
@@ -275,7 +332,17 @@ private:
     handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
   }
   
-  friend class __router_detail::http_connection;
+  void start_http_server() {
+    acceptor.async_accept(
+      [this](boost::beast::error_code ec, boost::asio::ip::tcp::socket socket) {
+          if(!ec)
+            std::make_shared<__router_detail::http_connection<router>>(std::move(socket), *this)->start();
+          start_http_server();
+      }
+    ); 
+  }
+
+  friend class __router_detail::http_connection<router>;
 
 public:
 
@@ -283,6 +350,11 @@ public:
   requires __router_detail::match_path<str, Handler>
   void GET(Handler&& h) {
     register_method<str>(http::verb::get, std::forward<Handler>(h));
+  }
+   
+  void serveHTTP() {
+    start_http_server();
+    io.run();
   }
 
   using middleware_type = std::function<void(parameter_storage)>;
@@ -292,86 +364,24 @@ public:
     return *this;
   }
 
-  router(boost::asio::io_context& io, size_t workers_count = std::thread::hardware_concurrency()): io(io), workers(workers_count) {
-    for(auto& thread : workers) {
-      thread = std::thread([&io](){
-        io.run();
-      });
-
-      thread.join();
-    }
+  router(boost::asio::io_context& io,
+         boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
+         unsigned short port = 8080)
+      : io(io), 
+        acceptor(io, {address, port}) {
   }
 
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
   boost::asio::io_context& io;
+  boost::asio::ip::tcp::acceptor acceptor;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
-  
-  std::vector<std::thread> workers;
 
 private:
   internal_handler_type get_handler(std::string_view requested_url) {
     return handlers.begin()->second;
   }
 };
-
-namespace __router_detail {
-  using tcp = boost::asio::ip::tcp;
-
-  class http_connection
-    : std::enable_shared_from_this<http_connection>
-  {
-
-    tcp::socket socket_;
-    boost::beast::flat_buffer buffer_{8192};
-
-    http::request<http::dynamic_body> request_;
-    http::response<http::dynamic_body> response_;
-
-    router& router_;
-
-    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
-      socket_.get_executor(), std::chrono::seconds(60)
-    };
-    
-    http_connection(tcp::socket socket, router& router_)
-      : socket_(std::move(socket)), router_(router_)
-    {}
-
-    void start() {
-      read_request();
-      check_deadline();
-    }
-
-    void read_request() {
-      auto self = shared_from_this();
-      
-      http::async_read(
-          socket_,
-          buffer_,
-          request_,
-          [self](boost::beast::error_code err, size_t bytes) {
-            boost::ignore_unused(bytes);
-            if (!err) {
-              auto handler = self->router_.get_handler(self->request_.target());
-              handler(std::move(self->request_), self->response_);
-            }
-          });
-    }
-
-    void check_deadline() {
-
-      auto self = shared_from_this();
-
-      deadline_.async_wait(
-          [self](boost::beast::error_code ec)
-          {
-            if (!ec)
-              self->socket_.close();
-          });
-      }
-  };
-}
