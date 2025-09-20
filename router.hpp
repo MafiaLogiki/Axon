@@ -12,6 +12,7 @@
 #include <memory>
 #include <string_view>
 #include <string>
+#include <thread>
 #include <tuple>
 #include <type_traits>
 #include <cstdio>
@@ -126,7 +127,7 @@ namespace __router_detail {
   concept invokable_with_path = requires (Handler handler) {
     { std::apply(handler, std::declval<
         tuple_cat_t<
-          std::tuple<const http::request<http::string_body>&, http::response<http::string_body>>, 
+          std::tuple<const http::request<http::dynamic_body>&, http::response<http::dynamic_body>>, 
           parsed_types_in_tuple<str>>>()) };
   };
 
@@ -291,7 +292,15 @@ public:
     return *this;
   }
 
-  router(boost::asio::io_context& io): io(io) {}
+  router(boost::asio::io_context& io, size_t workers_count = std::thread::hardware_concurrency()): io(io), workers(workers_count) {
+    for(auto& thread : workers) {
+      thread = std::thread([&io](){
+        io.run();
+      });
+
+      thread.join();
+    }
+  }
 
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
@@ -300,6 +309,8 @@ public:
 
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
+  
+  std::vector<std::thread> workers;
 
 private:
   internal_handler_type get_handler(std::string_view requested_url) {
