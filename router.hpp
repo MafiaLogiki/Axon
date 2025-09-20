@@ -167,7 +167,6 @@ namespace __router_detail {
       path.remove_prefix(pos_end_of_type_cell + 1);
     }
 
-
     return std::string(result_string.data(), result_string.size());
   }
 
@@ -182,10 +181,55 @@ namespace __router_detail {
       parse_path_types<N + 1>(requested_url, path, result_tuple);
     }
   }
-
+  
 }
 
 class router {
+public:
+
+  struct parameter_storage {
+  private:
+    std::map<std::string, std::string> storage;
+  public:
+    std::string get(const std::string& key) {
+      return storage[key];
+
+    }
+
+    void set(const std::string& key, std::string value) {
+      storage[key] = value;
+    }
+  };
+
+private:
+  router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
+    router::parameter_storage res;
+
+    for (size_t i = 0; i < path.size(); ++i) {
+      if (path[i] == '{') {
+        std::string_view value_view;
+        size_t end = requested_url.find("}", i);
+
+        if (end == std::string_view::npos) {
+          value_view = requested_url.substr(i);
+        } else {
+          value_view = requested_url.substr(i, end - i);
+        }
+
+        size_t name_start = path.find(":", i);
+        size_t name_end = path.find("}", name_start);
+        
+        std::string_view key_view = path.substr(name_start, name_end - name_start);
+        
+        std::string value = std::string(value_view.data(), value_view.size());
+        std::string key = std::string(key_view.data(), key_view.size());
+        res.set(key, value);
+      }
+    }
+
+    return res;
+  }
+
 private:
 
   template <constexpr_string str, typename Handler>
@@ -193,7 +237,7 @@ private:
 
     using tuple_path_types = __router_detail::parsed_types_in_tuple<str>;
 
-    internal_handler_type internal_handler = [path = std::string(std::string_view(str)), 
+    internal_handler_type internal_handler = [&, path = std::string(std::string_view(str)), 
                                               h = std::forward<Handler>(h), 
                                               global_middlewares = std::vector(global_middleware_storage),
                                               endpoint_middlewares = std::vector(temporary_middleware_storage)]
@@ -203,8 +247,15 @@ private:
         ) 
     {
       tuple_path_types path_types;
+
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
+
+      parameter_storage storage = parse_types_for_middleware(requested_url_view, path);
+
+      for(auto& func : global_middlewares) {
+        func(storage);
+      }
 
        __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
@@ -215,6 +266,7 @@ private:
     handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
   }
 
+
 public:
 
   template <constexpr_string str, typename Handler>
@@ -223,7 +275,7 @@ public:
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
 
-  using middleware_type = std::function<void(http::request<http::string_body>)>;
+  using middleware_type = std::function<void(parameter_storage)>;
 
   router& with(middleware_type middleware) {
     temporary_middleware_storage.push_back(middleware);
@@ -231,6 +283,7 @@ public:
   }
 
   using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
+
   
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 
