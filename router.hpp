@@ -1,8 +1,13 @@
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/flat_buffer.hpp>
+#include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <charconv>
 #include <cstdlib>
+#include <memory>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -182,6 +187,23 @@ namespace __router_detail {
     }
   }
   
+  using tcp = boost::asio::ip::tcp;
+
+  struct http_connection
+    : std::enable_shared_from_this<http_connection>
+  {
+
+    tcp::socket socket_;
+    boost::beast::flat_buffer buffer_{8192};
+
+    http::request<http::dynamic_body> request_;
+    http::response<http::dynamic_body> response_;
+
+    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
+      socket_.get_executor(), std::chrono::seconds(60)
+    };
+
+  };
 }
 
 class router {
@@ -242,8 +264,8 @@ private:
                                               global_middlewares = std::vector(global_middleware_storage),
                                               endpoint_middlewares = std::vector(temporary_middleware_storage)]
         (
-          http::request<http::string_body>&& req,
-          http::response<http::string_body>& res
+          http::request<http::dynamic_body>&& req,
+          http::response<http::dynamic_body>& res
         ) 
     {
       tuple_path_types path_types;
@@ -282,9 +304,12 @@ public:
     return *this;
   }
 
-  using internal_handler_type = std::function<void(http::request<http::string_body>&&, http::response<http::string_body>&)>;
+  router(boost::asio::io_context& io): io(io) {}
 
-  
+  using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
+
+ 
+  boost::asio::io_context& io;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
 
   std::vector<middleware_type> temporary_middleware_storage;
