@@ -342,6 +342,10 @@ private:
       std::string_view path_view = std::string_view(path);
 
       parameter_storage storage = parse_types_for_middleware(requested_url_view, path);
+      
+      for(auto& func : global_middlewares) {
+        func(storage);
+      }
 
       for(auto& func : endpoint_middlewares) {
         func(storage);
@@ -390,6 +394,10 @@ public:
   router& with(middleware_type middleware) {
     temporary_middleware_storage.push_back(middleware);
     return *this;
+  }
+
+  void use(middleware_type middleware) {
+    global_middleware_storage.push_back(middleware);
   }
 
   router(boost::asio::io_context& io,
