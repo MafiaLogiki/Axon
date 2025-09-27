@@ -10,6 +10,7 @@
 #include <boost/beast/http/verb.hpp>
 #include <boost/core/ignore_unused.hpp>
 #include <boost/url.hpp>
+#include <boost/url/segments_view.hpp>
 #include <boost/url/url_view.hpp>
 #include <charconv>
 #include <cstdlib>
@@ -301,28 +302,21 @@ private:
   router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
     router::parameter_storage res;
 
-    for (size_t i = 0; i < path.size(); ++i) {
-      if (path[i] == '{') {
-        std::string_view value_view;
-        size_t end = requested_url.find("}", i);
+    std::vector<std::string_view> parsed_path = split_path_view(path);
+    auto requested_url_segments = boost::urls::url_view(requested_url).segments();
 
-        if (end == std::string_view::npos) {
-          value_view = requested_url.substr(i);
-        } else {
-          value_view = requested_url.substr(i, end - i);
-        }
+    size_t i = 0;
+    for (auto seg : requested_url_segments) {
+      if (parsed_path[i][0] == '{') {
+        size_t start_pos = parsed_path[i].find(':');
+        size_t end_pos = parsed_path[i].find('}', start_pos);
+        string_view name = parsed_path[i].substr(start_pos + 1, end_pos - start_pos - 1);
 
-        size_t name_start = path.find(":", i);
-        size_t name_end = path.find("}", name_start);
-        
-        std::string_view key_view = path.substr(name_start, name_end - name_start);
-        
-        std::string value = std::string(value_view.data(), value_view.size());
-        std::string key = std::string(key_view.data(), key_view.size());
-        res.set(key, value);
+        res.set(std::string(name), seg);
       }
+      ++i;
     }
-
+    
     return res;
   }
 
@@ -347,9 +341,9 @@ private:
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
 
-      parameter_storage storage; // = parse_types_for_middleware(requested_url_view, path);
+      parameter_storage storage = parse_types_for_middleware(requested_url_view, path);
 
-      for(auto& func : global_middlewares) {
+      for(auto& func : endpoint_middlewares) {
         func(storage);
       }
 

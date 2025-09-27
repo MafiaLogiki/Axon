@@ -10,12 +10,17 @@ void handler(http::request<http::dynamic_body> req, http::response<http::dynamic
   std::cout << "Hello!" << std::endl;
 }
 
-void handler2(http::request<http::dynamic_body> req, http::response<http::dynamic_body> res, int id) {
-  std::cout << "Hello2! " << id << std::endl;
+void handler2(http::request<http::dynamic_body> req, http::response<http::dynamic_body> res, int id, int id2) {
+  std::cout << "Hello2! " << id << ' ' << id2 << std::endl;
 }
 
 void handler3(http::request<http::dynamic_body> req, http::response<http::dynamic_body> res, int id) {
   std::cout << "Hello3! " << id << std::endl;
+}
+
+void middleware1(router::parameter_storage storage) {
+  std::cout << storage.get("id") << std::endl;
+  std::cout << storage.get("id2") << std::endl;
 }
 
 int main() {
@@ -23,7 +28,7 @@ int main() {
   router r(io);
 
   r.GET<"/api/v1/test">(handler);
-  r.GET<"/api/v1/{int:id}/test">(handler2);
+  r.with(middleware1).GET<"/api/v1/{int:id}/{int:id2}">(handler2);
   r.GET<"/api/v1/test/{int:id}">(handler3);
 
   r.serveHTTP();
