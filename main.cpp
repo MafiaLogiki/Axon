@@ -6,14 +6,14 @@
 #include <boost/beast/http/verb.hpp>
 #include <iostream>
 
-void handler(http::request<http::dynamic_body> req, http::response<http::dynamic_body> res, std::string a, int b) {
-  std::cout << a << ' ' << b << std::endl;
+void handler(http::request<http::dynamic_body> req, http::response<http::dynamic_body> res) {
 }
 
 int main() {
   boost::asio::io_context io;
   router r(io);
-  r.GET<"/api/v1/{string:id}/{int:id2}">(handler);
+
+  r.GET<"/api/v1/id/id2">(handler);
 
   r.serveHTTP();
 }

@@ -209,6 +209,7 @@ namespace __router_detail {
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
       socket_.get_executor(), std::chrono::seconds(60)
     };
+
   public: 
     http_connection(tcp::socket socket, Router& router_)
       : socket_(std::move(socket)), router_(router_)
@@ -231,7 +232,27 @@ namespace __router_detail {
             if (!err) {
               auto handler = self->router_.get_handler(self->request_.target());
               handler(std::move(self->request_), self->response_);
+              self->write_response();
             }
+          });
+    }
+
+    void write_response() {
+
+      auto self = this->shared_from_this();
+      
+      std::stringstream str;
+      str << response_.body().size();
+
+      response_.set(http::field::content_length, str.view());
+
+      http::async_write(
+          socket_,
+          response_,
+          [self](boost::beast::error_code err, std::size_t b)
+          {
+            self->socket_.shutdown(tcp::socket::shutdown_send);
+            self->deadline_.cancel();
           });
     }
 
@@ -329,7 +350,11 @@ private:
     };
     
     temporary_middleware_storage.clear();
-    handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
+    if (std::tuple_size_v<tuple_path_types>) {
+      path_with_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
+    } else {
+      non_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
+    }
   }
   
   void start_http_server() {
@@ -375,13 +400,37 @@ public:
 
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
-  std::map<std::pair<std::string, http::verb>, internal_handler_type> handlers;
+
+  std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
+  std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
 
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
 
 private:
-  internal_handler_type get_handler(std::string_view requested_url) {
-    return handlers.begin()->second;
+
+  internal_handler_type get_handler(std::string_view requested_url, http::verb method) {
+    if (non_parameter_handlers.count(std::make_pair(std::string(requested_url), method))) {
+      return non_parameter_handlers[std::make_pair(std::string(requested_url), method)];
+    }
+
+    return parse_param_handlers(requested_url, method);
+  }
+
+  internal_handler_type parse_param_handlers(std::string_view requested_url, http::verb method) {
+    for (auto& [data, handler] : non_parameter_handlers) {
+      const std::string& path = data.first;
+      http::verb path_method = data.second;
+
+      if (is_parameter_path_math_url(requested_url, path)) {
+        return handler;
+      }
+    }
+    
+    return {};
+  }
+
+  bool is_parameter_path_math_url(std::string_view requested_url, std::string_view path) {
+    return false;
   }
 };
