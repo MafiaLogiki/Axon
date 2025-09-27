@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -8,12 +9,15 @@
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/url.hpp>
+#include <boost/url/url_view.hpp>
 #include <charconv>
 #include <cstdlib>
+#include <exception>
 #include <memory>
 #include <string_view>
 #include <string>
-#include <thread>
+#include <iostream>
 #include <tuple>
 #include <type_traits>
 #include <cstdio>
@@ -230,9 +234,14 @@ namespace __router_detail {
           [self](boost::beast::error_code err, size_t bytes) {
             boost::ignore_unused(bytes);
             if (!err) {
-              auto handler = self->router_.get_handler(self->request_.target());
-              handler(std::move(self->request_), self->response_);
-              self->write_response();
+              try {
+                auto handler = self->router_.get_handler(self->request_.target(), self->request_.method());
+
+                handler(std::move(self->request_), self->response_);
+                self->write_response();
+              } catch(std::exception& e) {
+                std::cout << e.what() << std::endl;
+              }
             }
           });
     }
@@ -418,7 +427,7 @@ private:
   }
 
   internal_handler_type parse_param_handlers(std::string_view requested_url, http::verb method) {
-    for (auto& [data, handler] : non_parameter_handlers) {
+    for (auto& [data, handler] : path_with_parameter_handlers) {
       const std::string& path = data.first;
       http::verb path_method = data.second;
 
@@ -430,7 +439,46 @@ private:
     return {};
   }
 
+  std::vector<std::string_view> split_path_view(std::string_view path) {
+    std::vector<std::string_view> segments;
+    size_t start = path.find_first_not_of('/'); 
+      
+    while (start != std::string_view::npos) {
+      size_t end = path.find('/', start);
+          
+      if (end == std::string_view::npos) {
+        segments.push_back(path.substr(start));
+        break;
+      }
+      segments.push_back(path.substr(start, end - start));
+      start = path.find_first_not_of('/', end);
+    }
+      
+    return segments;
+  }
+
   bool is_parameter_path_math_url(std::string_view requested_url, std::string_view path) {
-    return false;
+    auto requested_url_view = boost::urls::url_view(requested_url);
+    auto requested_url_segments = requested_url_view.segments();
+    
+    std::vector<std::string_view> path_segments = split_path_view(path);
+
+    if (path_segments.size() != requested_url_segments.size())
+      return false;
+
+    size_t i = 0;
+    for (auto seg : requested_url_segments) {
+      if (path_segments[i][0] == '{') {
+        continue;
+      }
+
+      if (!std::equal(seg.begin(), seg.end(), path_segments[i].begin(), path_segments[i].end())) {
+        return false;
+      }
+
+      ++i;
+    }
+
+    return true;
   }
 };
