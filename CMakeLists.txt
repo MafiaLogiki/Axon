@@ -9,6 +9,10 @@ find_package(Boost REQUIRED COMPONENTS url)
 
 add_executable(app main.cpp)
 
+target_compile_options(app PRIVATE
+  $<$<CONFIG:Debug>: -g3 -O0>
+)
+
 target_link_libraries(
   app
   Boost::url
