@@ -242,7 +242,6 @@ namespace __router_detail {
                 handler(std::move(self->request_), self->response_);
                 self->write_response();
               } catch(std::exception& e) {
-                std::cout << e.what() << std::endl;
                 self->router_.not_found_handler(std::move(self->request_), self->response_);
                 self->write_response();
               }
@@ -518,7 +517,7 @@ public:
     res.set(http::field::server, "server");
     res.set(http::field::content_type, "text/plain");
 
-    boost::beast::ostream(res.body()) << "404 Not Found: The resource you requested could not be found.";
+    boost::beast::ostream(res.body()) << "404 Not Found: The resource you requested could not be found.\n";
     
     res.prepare_payload(); 
   };
