@@ -23,6 +23,7 @@
 #include <map>
 #include <utility>
 
+#include "detail/args_builder.hpp"
 #include "detail/constexpr_string.hpp"
 #include "detail/function_traits.hpp"
 #include "detail/http_connection.hpp"
@@ -114,9 +115,13 @@ private:
         func(storage);
       }
 
-      router::detail::parse_path_types<0>(requested_url_view, path_view, path_data);
+      // router::detail::parse_path_types<0>(requested_url_view, path_view, path_data);
 
-      // std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_data));
+      using handler_args = callable_args_t<Handler>;
+      
+      auto values_tuple = build_args_from_type_tuple<handler_args>(req, res, path);
+
+      std::apply(h, values_tuple);
     };
     
     temporary_middleware_storage.clear();

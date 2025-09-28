@@ -11,6 +11,7 @@ struct path {
   using value_type = std::tuple<Ts...>;
 
   explicit path(value_type&& data): data_(std::move(data)) {}
+  path(): data_() {}
 
   const value_type& get() const {
     return data_;

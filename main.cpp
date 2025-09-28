@@ -18,8 +18,8 @@ void handler2(http::request<http::dynamic_body> req, http::response<http::dynami
   std::cout << "Hello2! " << id << ' ' << id2 << std::endl;
 }
 
-void handler3(router::extract::path<int>) {
-  std::cout << "test";
+void handler3(router::extract::path<int> p) {
+  std::cout << std::get<0>(p) << std::endl;
 }
 
 void middleware1(Router::parameter_storage storage) {
@@ -33,7 +33,7 @@ int main() {
 
   //r->GET<"/api/v1/test">(handler);
   //r->with(middleware1).GET<"/api/v1/{int:id}/{int:id2}">(handler2);
-  r->GET<"/api/v1/test/{int:id}">(handler3);
+  r->GET<"/api/v1/{int:id}">(handler3);
 
   r->serveHTTP();
 }
