@@ -25,11 +25,11 @@ void middleware1(router::parameter_storage storage) {
 
 int main() {
   boost::asio::io_context io;
-  router r(io);
+  auto r = router::create_router(io);
 
-  r.GET<"/api/v1/test">(handler);
-  r.with(middleware1).GET<"/api/v1/{int:id}/{int:id2}">(handler2);
-  r.GET<"/api/v1/test/{int:id}">(handler3);
+  r->GET<"/api/v1/test">(handler);
+  r->with(middleware1).GET<"/api/v1/{int:id}/{int:id2}">(handler2);
+  r->GET<"/api/v1/test/{int:id}">(handler3);
 
-  r.serveHTTP();
+  r->serveHTTP();
 }

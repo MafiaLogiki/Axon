@@ -3,6 +3,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/error.hpp>
+#include <boost/beast/core/ostream.hpp>
 #include <boost/beast/core/flat_buffer.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
@@ -242,6 +243,8 @@ namespace __router_detail {
                 self->write_response();
               } catch(std::exception& e) {
                 std::cout << e.what() << std::endl;
+                self->router_.not_found_handler(std::move(self->request_), self->response_);
+                self->write_response();
               }
             }
           });
@@ -281,9 +284,9 @@ namespace __router_detail {
 
 }
 
-class router {
+class router
+  : public std::enable_shared_from_this<router> {
 public:
-
 
   struct parameter_storage {
   private:
@@ -300,8 +303,12 @@ public:
   };
 
   using middleware_type = std::function<void(parameter_storage)>;
+
 private:
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
+
+public:
+  using not_found_handler_function = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
 private:
   router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
@@ -325,14 +332,16 @@ private:
     return res;
   }
 
-private:
 
   template <constexpr_string str, typename Handler>
   void register_method(http::verb method, Handler&& h) {
 
     using tuple_path_types = __router_detail::parsed_types_in_tuple<str>;
 
-    internal_handler_type internal_handler = [&, path = std::string(std::string_view(str)), 
+    auto self = shared_from_this();
+
+    internal_handler_type internal_handler = [self,
+                                              path = std::string(std::string_view(str)), 
                                               h = std::forward<Handler>(h), 
                                               global_middlewares = std::vector(global_middleware_storage),
                                               endpoint_middlewares = std::vector(temporary_middleware_storage)]
@@ -346,7 +355,7 @@ private:
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
 
-      parameter_storage storage = parse_types_for_middleware(requested_url_view, path);
+      parameter_storage storage = self->parse_types_for_middleware(requested_url_view, path);
       
       for(auto& func : global_middlewares) {
         func(storage);
@@ -444,10 +453,25 @@ private:
 
     return true;
   }
+  router(boost::asio::io_context& io,
+         boost::asio::ip::address address,
+         unsigned short port)
+      : io(io), 
+        acceptor(io, {address, port}) 
+  {}
+
 
   friend class __router_detail::http_connection<router>;
 
+  template <typename T, typename... Args>
+  friend std::shared_ptr<T> std::make_shared(Args&&...);
+
 public:
+
+  router(router&& r)
+    : io(r.io),
+      acceptor(std::move(r.acceptor))
+  {}
 
   template <constexpr_string str, typename Handler>
   requires __router_detail::match_path<str, Handler>
@@ -460,7 +484,6 @@ public:
     io.run();
   }
 
-
   router& with(middleware_type middleware) {
     temporary_middleware_storage.push_back(middleware);
     return *this;
@@ -470,11 +493,15 @@ public:
     global_middleware_storage.push_back(middleware);
   }
 
-  router(boost::asio::io_context& io,
+  void set_not_found_handler(not_found_handler_function&& func) {
+    not_found_handler = func;
+  }
+  
+  static std::shared_ptr<router> create_router(boost::asio::io_context& io,
          boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
-         unsigned short port = 8080)
-      : io(io), 
-        acceptor(io, {address, port}) {
+         unsigned short port = 8080) {
+    router r(io, address, port);
+    return std::make_shared<router>(std::move(r));
   }
 
 
@@ -483,6 +510,18 @@ public:
 
   std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
+
+  not_found_handler_function not_found_handler = [](http::request<http::dynamic_body>&& req, http::response<http::dynamic_body>& res){
+    res.result(http::status::not_found);
+    res.version(req.version());
+
+    res.set(http::field::server, "server");
+    res.set(http::field::content_type, "text/plain");
+
+    boost::beast::ostream(res.body()) << "404 Not Found: The resource you requested could not be found.";
+    
+    res.prepare_payload(); 
+  };
 
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
