@@ -5,7 +5,8 @@
 
 #include "constexpr_string.hpp"
 
-namespace __router_detail {
+namespace router {
+namespace detail {
 
 using namespace boost::beast;
 
@@ -76,4 +77,5 @@ concept invokable_with_path = requires (Handler handler) {
 template <constexpr_string str, typename Handler>
 concept match_path = invokable_with_path<str, Handler>;
 
-} // __router_detail
+} // naespace router
+} // namespace detail 

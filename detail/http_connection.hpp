@@ -6,8 +6,8 @@
 #include <boost/beast/http.hpp>
 
 
-namespace __router_detail {
-
+namespace router {
+namespace detail {
 
 using tcp = boost::asio::ip::tcp;
 using namespace boost::beast;
@@ -94,4 +94,5 @@ public:
     }
 };
 
-} // __router_detail
+} // namespace __detail
+} // namespace router 

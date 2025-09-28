@@ -4,7 +4,8 @@
 #include <string>
 #include <charconv>
 
-namespace __router_detail {
+namespace router {
+namespace detail {
 
   template <typename T>
   T parse_type_value(std::string_view& requested_url, std::string_view& path);
@@ -61,4 +62,6 @@ namespace __router_detail {
       parse_path_types<N + 1>(requested_url, path, result_tuple);
     }
   }
-}
+
+} // namespace router 
+} // namespace detail

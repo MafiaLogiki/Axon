@@ -30,8 +30,11 @@
 
 using namespace boost::beast;
 
-class router
-  : public std::enable_shared_from_this<router> {
+namespace router {
+namespace detail {
+
+class __router
+  : public std::enable_shared_from_this<__router> {
 public:
   struct parameter_storage {
     std::string get(const std::string& key) {
@@ -53,8 +56,8 @@ private:
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
 
-  router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
-    router::parameter_storage res;
+  __router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
+    __router::parameter_storage res;
 
     std::vector<std::string_view> parsed_path = split_path_view(path);
     auto requested_url_segments = boost::urls::url_view(requested_url).segments();
@@ -78,7 +81,7 @@ private:
   template <constexpr_string str, typename Handler>
   void register_method(http::verb method, Handler&& h) {
 
-    using tuple_path_types = __router_detail::parsed_types_in_tuple<str>;
+    using tuple_path_types = router::detail::parsed_types_in_tuple<str>;
 
     auto self = shared_from_this();
 
@@ -107,7 +110,7 @@ private:
         func(storage);
       }
 
-       __router_detail::parse_path_types<0>(requested_url_view, path_view, path_types);
+      router::detail::parse_path_types<0>(requested_url_view, path_view, path_types);
 
       std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_types));
     };
@@ -124,7 +127,7 @@ private:
     acceptor.async_accept(
       [this](boost::beast::error_code ec, boost::asio::ip::tcp::socket socket) {
           if(!ec)
-            std::make_shared<__router_detail::http_connection<router>>(std::move(socket), *this)->start();
+            std::make_shared<router::detail::http_connection<__router>>(std::move(socket), *this)->start();
           start_http_server();
       }
     ); 
@@ -196,7 +199,7 @@ private:
     return true;
   }
 
-  router(boost::asio::io_context& io,
+  __router(boost::asio::io_context& io,
          boost::asio::ip::address address,
          unsigned short port)
       : io(io), 
@@ -204,17 +207,17 @@ private:
   {}
 
 
-  friend class __router_detail::http_connection<router>;
+  friend class router::detail::http_connection<__router>;
 
 public:
 
-  router(router&& r)
+  __router(__router&& r)
     : io(r.io),
       acceptor(std::move(r.acceptor))
   {}
 
   template <constexpr_string str, typename Handler>
-  requires __router_detail::match_path<str, Handler>
+  requires router::detail::match_path<str, Handler>
   void GET(Handler&& h) {
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
@@ -224,7 +227,7 @@ public:
     io.run();
   }
 
-  router& with(middleware_type middleware) {
+  __router& with(middleware_type middleware) {
     temporary_middleware_storage.push_back(middleware);
     return *this;
   }
@@ -237,11 +240,11 @@ public:
     not_found_handler = func;
   }
   
-  static std::shared_ptr<router> create_router(boost::asio::io_context& io,
+  static std::shared_ptr<__router> create_router(boost::asio::io_context& io,
          boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
          unsigned short port = 8080) {
-    router r(io, address, port);
-    return std::make_shared<router>(std::move(r));
+    __router r(io, address, port);
+    return std::make_shared<__router>(std::move(r));
   }
 
   boost::asio::io_context& io;
@@ -265,3 +268,9 @@ public:
   std::vector<middleware_type> temporary_middleware_storage;
   std::vector<middleware_type> global_middleware_storage;
 };
+
+} // namespace router
+} // namespace detail
+
+
+using Router = router::detail::__router;
