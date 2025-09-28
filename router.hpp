@@ -13,303 +13,46 @@
 #include <boost/url.hpp>
 #include <boost/url/segments_view.hpp>
 #include <boost/url/url_view.hpp>
-#include <charconv>
 #include <cstdlib>
-#include <exception>
 #include <memory>
 #include <string_view>
 #include <string>
-#include <iostream>
 #include <tuple>
-#include <type_traits>
 #include <cstdio>
 #include <boost/beast/http.hpp>
 #include <map>
 #include <utility>
 
+#include "detail/constexpr_string.hpp"
+#include "detail/http_connection.hpp"
+#include "detail/path_parser.hpp"
+#include "detail/type_parser.hpp"
+
 using namespace boost::beast;
-
-template <size_t N>
-struct constexpr_string {
-  char data[N];
-
-  static constexpr size_t npos = -1;
-
-  constexpr constexpr_string(const char (&str)[N]) {
-    for (size_t i = 0; i < N; ++i) {
-      data[i] = str[i];
-    }
-  }
-
-  constexpr constexpr_string(std::string_view str) {
-    for (size_t i = 0; i < N; ++i) {
-      data[i] = str[i];
-    }
-  }
-
-  constexpr operator std::string_view() const {
-    return {data, N - 1};
-  }
-
-  constexpr size_t size() const {
-    return N;
-  }
-  
-
-  constexpr size_t find(char c) const {
-    for (size_t i = 0; i < N; ++i) {
-      if (data[i] == c) {
-        return i;
-      }
-    }
-
-    return npos;
-  }
-};
-
-template <size_t N>
-constexpr_string(const char (&)[N]) -> constexpr_string<N>;
-
-
-namespace __router_detail {
-
-  template<constexpr_string str, typename = void>
-  struct get_type_from_string;
-
-  template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("int:")>> {
-    using type = int;
-  };
-
-  template <constexpr_string str>
-  struct get_type_from_string<str, std::enable_if_t<std::string_view(str).starts_with("string:")>> {
-    using type = std::string;
-  };
-
-  template <constexpr_string str, size_t pos>
-  struct path_parser {
-    static constexpr size_t pos_start = str.find('{');
-    
-    static constexpr std::string_view type_and_after = (pos_start != constexpr_string<0>::npos ? std::string_view(str).substr(pos_start + 1) : std::string_view("asdasd"));
-    
-    static constexpr constexpr_string<type_and_after.size()> type_and_after_structual = type_and_after;
-    // using current_type__ = std::conditional_t<pos_start != constexpr_string<0>::npos, std::tuple<typename get_type_from_string<type_and_after_structual>::type>, std::tuple<>>;
-   
-    using current_type__ = decltype([]() {
-      if constexpr (pos_start != constexpr_string<0>::npos) {
-        return std::tuple<typename get_type_from_string<type_and_after_structual>::type>();
-      } else {
-        return std::tuple<>();
-      }
-    }());
-
-    using remaining_types__ = path_parser<type_and_after_structual, pos_start>::types;
-    
-    using types = decltype(std::tuple_cat(
-      std::declval<current_type__>(),
-      std::declval<remaining_types__>()
-    ));
-  };
-
-  template <constexpr_string str>
-  struct path_parser<str, std::string_view::npos> {
-    using types = std::tuple<>;
-  };
-
-  template <constexpr_string str>
-  using parsed_types_in_tuple = path_parser<str, 1>::types;
-
-  template <typename f, typename... Args>
-  struct function_matches_tuple;
-
-  template <typename f, typename... Args>
-  struct function_matches_tuple<f, std::tuple<Args...>> {
-    static constexpr bool value = std::is_invocable_v<f, Args...>;
-  };
-  
-  template <typename... tuples>
-  using tuple_cat_t = decltype(std::tuple_cat(std::declval<tuples>()...));
-
-  template <constexpr_string str, typename Handler>
-  concept invokable_with_path = requires (Handler handler) {
-    { std::apply(handler, std::declval<
-        tuple_cat_t<
-          std::tuple<const http::request<http::dynamic_body>&, http::response<http::dynamic_body>>, 
-          parsed_types_in_tuple<str>>>()) };
-  };
-
-  template <constexpr_string str, typename Handler>
-  concept match_path = invokable_with_path<str, Handler>;
-
-  template <typename T>
-  T parse_type_value(std::string_view& requested_url, std::string_view& path);
-
-  template <>
-  int parse_type_value<int>(std::string_view& requested_url, std::string_view& path) {
-    size_t pos_start = path.find("{");
-    size_t pos_end_of_type_cell = path.find("}");
-
-    size_t end = requested_url.find("/", pos_start);
-
-    std::string_view number;
-    if (end == std::string_view::npos) {
-      number = requested_url.substr(pos_start);
-    } else {
-      number = requested_url.substr(pos_start, end - pos_start + 1);
-      requested_url.remove_prefix(end);
-      path.remove_prefix(pos_end_of_type_cell + 1);
-    }
-
-    int num;
-    std::from_chars(number.data(), number.data() + number.size(), num);
-
-    return num;
-  }
-   
-  template <>
-  std::string parse_type_value<std::string>(std::string_view& requested_url, std::string_view& path) {
-    size_t pos_start = path.find("{");
-    size_t pos_end_of_type_cell = path.find("}");
-
-    size_t end = requested_url.find("/", pos_start);
-
-    std::string_view result_string;
-    if (end == std::string_view::npos) {
-      result_string = requested_url.substr(pos_start);
-    } else {
-      result_string = requested_url.substr(pos_start, end - pos_start);
-      requested_url.remove_prefix(end);
-      path.remove_prefix(pos_end_of_type_cell + 1);
-    }
-
-    return std::string(result_string.data(), result_string.size());
-  }
-
-  template <size_t N, typename... Args>
-  void parse_path_types(std::string_view requested_url, std::string_view path, std::tuple<Args...>& result_tuple) {
-
-    if constexpr (N >= sizeof...(Args)) {
-      return; 
-    } else {
-      using head = std::tuple_element_t<N, std::tuple<Args...>>;
-      std::get<N>(result_tuple) = parse_type_value<head>(requested_url, path); 
-      parse_path_types<N + 1>(requested_url, path, result_tuple);
-    }
-  }
-  
-  using tcp = boost::asio::ip::tcp;
-  
-  template <typename Router>
-  class http_connection
-    : public std::enable_shared_from_this<http_connection<Router>>
-  {
-
-    tcp::socket socket_;
-    boost::beast::flat_buffer buffer_{8192};
-
-    http::request<http::dynamic_body> request_;
-    http::response<http::dynamic_body> response_;
-
-    Router& router_;
-
-    boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
-      socket_.get_executor(), std::chrono::seconds(60)
-    };
-
-  public: 
-    http_connection(tcp::socket socket, Router& router_)
-      : socket_(std::move(socket)), router_(router_)
-    {}
-
-    void start() {
-      read_request();
-      check_deadline();
-    }
-
-    void read_request() {
-      auto self = this->shared_from_this();
-      
-      http::async_read(
-          socket_,
-          buffer_,
-          request_,
-          [self](boost::beast::error_code err, size_t bytes) {
-            boost::ignore_unused(bytes);
-            if (!err) {
-              try {
-                auto handler = self->router_.get_handler(self->request_.target(), self->request_.method());
-
-                handler(std::move(self->request_), self->response_);
-                self->write_response();
-              } catch(std::exception& e) {
-                self->router_.not_found_handler(std::move(self->request_), self->response_);
-                self->write_response();
-              }
-            }
-          });
-    }
-
-    void write_response() {
-
-      auto self = this->shared_from_this();
-      
-      std::stringstream str;
-      str << response_.body().size();
-
-      response_.set(http::field::content_length, str.view());
-
-      http::async_write(
-          socket_,
-          response_,
-          [self](boost::beast::error_code err, std::size_t b)
-          {
-            self->socket_.shutdown(tcp::socket::shutdown_send);
-            self->deadline_.cancel();
-          });
-    }
-
-    void check_deadline() {
-
-      auto self = this->shared_from_this();
-
-      deadline_.async_wait(
-          [self](boost::beast::error_code ec)
-          {
-            if (!ec)
-              self->socket_.close();
-          });
-      }
-  };
-
-}
 
 class router
   : public std::enable_shared_from_this<router> {
 public:
-
   struct parameter_storage {
-  private:
-    std::map<std::string, std::string> storage;
-  public:
     std::string get(const std::string& key) {
       return storage[key];
-
     }
 
     void set(const std::string& key, std::string value) {
       storage[key] = value;
     }
+
+  private:
+    std::map<std::string, std::string> storage;
   };
 
   using middleware_type = std::function<void(parameter_storage)>;
+  using not_found_handler_function = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
 private:
   using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
-public:
-  using not_found_handler_function = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
-private:
   router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
     router::parameter_storage res;
 
@@ -452,6 +195,7 @@ private:
 
     return true;
   }
+
   router(boost::asio::io_context& io,
          boost::asio::ip::address address,
          unsigned short port)
@@ -461,9 +205,6 @@ private:
 
 
   friend class __router_detail::http_connection<router>;
-
-  template <typename T, typename... Args>
-  friend std::shared_ptr<T> std::make_shared(Args&&...);
 
 public:
 
@@ -502,7 +243,6 @@ public:
     router r(io, address, port);
     return std::make_shared<router>(std::move(r));
   }
-
 
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
