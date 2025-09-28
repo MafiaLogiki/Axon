@@ -284,6 +284,7 @@ namespace __router_detail {
 class router {
 public:
 
+
   struct parameter_storage {
   private:
     std::map<std::string, std::string> storage;
@@ -297,6 +298,10 @@ public:
       storage[key] = value;
     }
   };
+
+  using middleware_type = std::function<void(parameter_storage)>;
+private:
+  using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
 
 private:
   router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
@@ -374,50 +379,6 @@ private:
     ); 
   }
 
-  friend class __router_detail::http_connection<router>;
-
-public:
-
-  template <constexpr_string str, typename Handler>
-  requires __router_detail::match_path<str, Handler>
-  void GET(Handler&& h) {
-    register_method<str>(http::verb::get, std::forward<Handler>(h));
-  }
-   
-  void serveHTTP() {
-    start_http_server();
-    io.run();
-  }
-
-  using middleware_type = std::function<void(parameter_storage)>;
-
-  router& with(middleware_type middleware) {
-    temporary_middleware_storage.push_back(middleware);
-    return *this;
-  }
-
-  void use(middleware_type middleware) {
-    global_middleware_storage.push_back(middleware);
-  }
-
-  router(boost::asio::io_context& io,
-         boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
-         unsigned short port = 8080)
-      : io(io), 
-        acceptor(io, {address, port}) {
-  }
-
-  using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
-
-  boost::asio::io_context& io;
-  boost::asio::ip::tcp::acceptor acceptor;
-
-  std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
-  std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
-
-  std::vector<middleware_type> temporary_middleware_storage;
-  std::vector<middleware_type> global_middleware_storage;
-
 private:
 
   internal_handler_type get_handler(std::string_view requested_url, http::verb method) {
@@ -483,4 +444,46 @@ private:
 
     return true;
   }
+
+  friend class __router_detail::http_connection<router>;
+
+public:
+
+  template <constexpr_string str, typename Handler>
+  requires __router_detail::match_path<str, Handler>
+  void GET(Handler&& h) {
+    register_method<str>(http::verb::get, std::forward<Handler>(h));
+  }
+   
+  void serveHTTP() {
+    start_http_server();
+    io.run();
+  }
+
+
+  router& with(middleware_type middleware) {
+    temporary_middleware_storage.push_back(middleware);
+    return *this;
+  }
+
+  void use(middleware_type middleware) {
+    global_middleware_storage.push_back(middleware);
+  }
+
+  router(boost::asio::io_context& io,
+         boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
+         unsigned short port = 8080)
+      : io(io), 
+        acceptor(io, {address, port}) {
+  }
+
+
+  boost::asio::io_context& io;
+  boost::asio::ip::tcp::acceptor acceptor;
+
+  std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
+  std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
+
+  std::vector<middleware_type> temporary_middleware_storage;
+  std::vector<middleware_type> global_middleware_storage;
 };
