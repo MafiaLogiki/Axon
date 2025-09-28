@@ -62,6 +62,6 @@ namespace detail {
       parse_path_types<N + 1>(requested_url, path, result_tuple);
     }
   }
-
+  
 } // namespace router 
 } // namespace detail

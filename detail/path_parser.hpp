@@ -1,9 +1,14 @@
 #pragma once
 
+#include <boost/beast/http/dynamic_body_fwd.hpp>
+#include <boost/beast/http/message_fwd.hpp>
 #include <tuple>
 #include <boost/beast/http.hpp>
+#include <type_traits>
 
 #include "constexpr_string.hpp"
+#include "extract.hpp"
+#include "function_traits.hpp"
 
 namespace router {
 namespace detail {
@@ -53,7 +58,7 @@ struct path_parser<str, std::string_view::npos> {
 };
 
 template <constexpr_string str>
-using parsed_types_in_tuple = path_parser<str, 1>::types;
+using parsed_types = path_parser<str, 1>::types;
 
 template <typename f, typename... Args>
 struct function_matches_tuple;
@@ -66,16 +71,52 @@ struct function_matches_tuple<f, std::tuple<Args...>> {
 template <typename... tuples>
 using tuple_cat_t = decltype(std::tuple_cat(std::declval<tuples>()...));
 
+
 template <constexpr_string str, typename Handler>
 concept invokable_with_path = requires (Handler handler) {
   { std::apply(handler, std::declval<
       tuple_cat_t<
         std::tuple<const http::request<http::dynamic_body>&, http::response<http::dynamic_body>>, 
-        parsed_types_in_tuple<str>>>()) };
+        parsed_types<str>>>()) };
 };
 
 template <constexpr_string str, typename Handler>
 concept match_path = invokable_with_path<str, Handler>;
+
+
+template <typename Handler>
+using handler_args = callable_args_t<Handler>;
+
+template <typename... Args>
+struct is_argument_valid
+  : std::false_type
+{};
+
+template <typename... Args>
+struct is_argument_valid<router::extract::path<Args...>, std::tuple<Args...>>
+  : std::true_type
+{};
+
+template <typename... Args>
+struct is_argument_valid<http::request<http::dynamic_body>&&, std::tuple<Args...>>
+  : std::true_type
+{};
+
+template <typename... Args>
+struct is_argument_valid<http::response<http::dynamic_body>&, std::tuple<Args...>>
+  : std::true_type
+{};
+
+template <typename tuple, typename... Args>
+struct are_all_arguments_valid;
+
+template <typename tuple, typename... Args>
+struct are_all_arguments_valid<tuple, std::tuple<Args...>>
+  : std::conjunction<is_argument_valid<Args, tuple>...>
+{};
+
+template <typename tuple, typename... Args>
+inline static constexpr bool are_all_arguments_valid_v = are_all_arguments_valid<tuple, Args...>::value;
 
 } // naespace router
 } // namespace detail 

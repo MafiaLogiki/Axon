@@ -24,9 +24,10 @@
 #include <utility>
 
 #include "detail/constexpr_string.hpp"
+#include "detail/function_traits.hpp"
 #include "detail/http_connection.hpp"
 #include "detail/path_parser.hpp"
-#include "detail/type_parser.hpp"
+#include "detail/value_parser.hpp"
 
 
 namespace router {
@@ -82,7 +83,9 @@ private:
   template <constexpr_string str, typename Handler>
   void register_method(http::verb method, Handler&& h) {
 
-    using tuple_path_types = router::detail::parsed_types_in_tuple<str>;
+    using path_types = router::detail::parsed_types<str>;
+
+    static_assert(are_all_arguments_valid_v<path_types, callable_args_t<Handler>>, "test");
 
     auto self = shared_from_this();
 
@@ -96,7 +99,7 @@ private:
           http::response<http::dynamic_body>& res
         ) 
     {
-      tuple_path_types path_types;
+      path_types path_data;
 
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
@@ -111,13 +114,13 @@ private:
         func(storage);
       }
 
-      router::detail::parse_path_types<0>(requested_url_view, path_view, path_types);
+      router::detail::parse_path_types<0>(requested_url_view, path_view, path_data);
 
-      std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_types));
+      // std::apply(h, std::tuple_cat(std::tuple(req), std::tuple(res), path_data));
     };
     
     temporary_middleware_storage.clear();
-    if (std::tuple_size_v<tuple_path_types>) {
+    if (std::tuple_size<path_types>::value) {
       path_with_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
     } else {
       non_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
@@ -218,7 +221,6 @@ public:
   {}
 
   template <constexpr_string str, typename Handler>
-  requires router::detail::match_path<str, Handler>
   void GET(Handler&& h) {
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
