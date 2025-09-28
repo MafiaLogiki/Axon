@@ -28,10 +28,11 @@
 #include "detail/path_parser.hpp"
 #include "detail/type_parser.hpp"
 
-using namespace boost::beast;
 
 namespace router {
 namespace detail {
+
+using namespace boost::beast;
 
 class __router
   : public std::enable_shared_from_this<__router> {
