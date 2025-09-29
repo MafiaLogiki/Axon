@@ -2,6 +2,7 @@
 
 #include <tuple>
 #include <type_traits>
+#include <nlohmann/json.hpp>
 
 namespace router {
 namespace extract {
@@ -19,6 +20,15 @@ struct path {
 
 private:
   value_type data_;
+};
+
+template <typename T>
+struct json {
+  nlohmann::json j;
+
+  void serialize(T& obj) {
+    obj = j.template get<T>();
+  }
 };
 
 } // namespace extract
