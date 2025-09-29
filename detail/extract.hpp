@@ -7,6 +7,7 @@
 namespace router {
 namespace extract {
 
+
 template <typename... Ts>
 struct path {
   using value_type = std::tuple<Ts...>;
@@ -30,6 +31,19 @@ struct json {
     obj = j.template get<T>();
   }
 };
+
+namespace detail {
+
+  template <typename T, typename... Args>
+  std::true_type test_has_method_serialize(decltype(std::declval<T>().serialize(std::declval<Args>()...), nullptr));
+
+  template <typename...>
+  std::false_type test_has_method_serialize(...);
+
+} // namespace detail
+
+template <typename T, typename... Args>
+struct has_method_serialize: decltype(detail::test_has_method_serialize<T, Args...>(nullptr)) {};
 
 } // namespace extract
 } // namespace router

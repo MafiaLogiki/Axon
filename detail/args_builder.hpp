@@ -4,6 +4,7 @@
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
 #include <string_view>
+#include <nlohmann/json.hpp>
 
 #include "function_traits.hpp"
 #include "extract.hpp"
@@ -37,6 +38,11 @@ struct is_argument_valid<http::response<http::dynamic_body>&, std::tuple<Args...
   : std::true_type
 {};
 
+template <typename T, typename... Args>
+struct is_argument_valid<router::extract::json<T>, std::tuple<Args...>>
+  : router::extract::has_method_serialize<T, nlohmann::json&>
+{};
+
 template <typename tuple, typename... Args>
 struct are_all_arguments_valid;
 
@@ -44,6 +50,7 @@ template <typename tuple, typename... Args>
 struct are_all_arguments_valid<tuple, std::tuple<Args...>>
   : std::conjunction<is_argument_valid<Args, tuple>...>
 {};
+
 
 template <typename tuple, typename... Args>
 inline static constexpr bool are_all_arguments_valid_v = are_all_arguments_valid<tuple, Args...>::value;
@@ -73,6 +80,13 @@ struct argument_creator<router::extract::path<Args...>> {
     parse_path_types<0>(req.target(), path, values);
   
     return router::extract::path<Args...>(std::move(values));
+  }
+};
+
+template<typename T>
+struct argument_creator<router::extract::json<T>> {
+  static router::extract::json<T> create(http::request<http::dynamic_body>& req, http::response<http::dynamic_body>& res, std::string_view path) {
+    return {};
   }
 };
 
