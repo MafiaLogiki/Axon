@@ -28,7 +28,6 @@
 #include "detail/function_traits.hpp"
 #include "detail/http_connection.hpp"
 #include "detail/path_parser.hpp"
-#include "detail/value_parser.hpp"
 
 
 namespace router {
@@ -84,9 +83,9 @@ private:
   template <constexpr_string str, typename Handler>
   void register_method(http::verb method, Handler&& h) {
 
-    using path_types = router::detail::parsed_types<str>;
+    using path_types_tuple = router::detail::parsed_types<str>;
 
-    static_assert(are_all_arguments_valid_v<path_types, callable_args_t<Handler>>, "test");
+    static_assert(are_all_arguments_valid_v<path_types_tuple, callable_args_t<Handler>>, "Invalid handler arguments");
 
     auto self = shared_from_this();
 
@@ -100,7 +99,7 @@ private:
           http::response<http::dynamic_body>& res
         ) 
     {
-      path_types path_data;
+      path_types_tuple path_data;
 
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
@@ -115,8 +114,6 @@ private:
         func(storage);
       }
 
-      // router::detail::parse_path_types<0>(requested_url_view, path_view, path_data);
-
       using handler_args = callable_args_t<Handler>;
       
       auto values_tuple = build_args_from_type_tuple<handler_args>(req, res, path);
@@ -125,7 +122,7 @@ private:
     };
     
     temporary_middleware_storage.clear();
-    if (std::tuple_size<path_types>::value) {
+    if (std::tuple_size<path_types_tuple>::value) {
       path_with_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
     } else {
       non_parameter_handlers[std::make_pair(std::string(std::string_view(str)), method)] = internal_handler;
