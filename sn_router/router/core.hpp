@@ -25,7 +25,6 @@
 #include <utility>
 
 #include <sn_router/detail/constexpr_string.hpp>
-#include <sn_router/detail/http_connection.hpp>
 #include <sn_router/detail/path_parser.hpp>
 #include <sn_router/detail/value_parser.hpp>
 #include <sn_router/detail/args_builder.hpp>
@@ -207,8 +206,6 @@ private:
 
   __router() = default;
 
-
-  friend class router::detail::http_connection<__router>;
 
 public:
 
