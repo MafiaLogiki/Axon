@@ -14,6 +14,7 @@
 #include <boost/url/segments_view.hpp>
 #include <boost/url/url_view.hpp>
 #include <cstdlib>
+#include <functional>
 #include <memory>
 #include <string_view>
 #include <string>
@@ -60,6 +61,8 @@ public:
 
   using middleware_type = std::function<void(parameter_storage)>;
   using not_found_handler_function = std::function<void(sn::request_type&&, sn::response_type&)>;
+
+  using handler_type = std::function<void(sn::request_type&&, sn::response_type&)>;
 
 private:
   using internal_handler_type = std::function<void(sn::request_type&&, sn::response_type&)>;
