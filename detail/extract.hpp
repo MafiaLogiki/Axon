@@ -7,22 +7,14 @@
 
 namespace router {
 namespace extract {
+namespace detail {
 
+template <typename T, typename... Args>
+std::true_type test_has_method_deserialize(decltype(std::declval<T>().deserialize(std::declval<Args>()...), nullptr));
 
-template <typename... Ts>
-struct path {
-  using value_type = std::tuple<Ts...>;
+template <typename...>
+std::false_type test_has_method_deserialize(...);
 
-  explicit path(value_type&& data): data_(std::move(data)) {}
-  path(): data_() {}
-
-  const value_type& get() const {
-    return data_;
-  }
-
-private:
-  value_type data_;
-};
 
 struct json_unit {
   using json_type = nlohmann::json;
@@ -40,10 +32,27 @@ private:
   nlohmann::json j;
 };
 
+} // namespace detail
+
+template <typename... Ts>
+struct path {
+  using value_type = std::tuple<Ts...>;
+
+  explicit path(value_type&& data): data_(std::move(data)) {}
+  path(): data_() {}
+
+  const value_type& get() const {
+    return data_;
+  }
+
+private:
+  value_type data_;
+};
+
 template <typename T>
 struct json {
   
-  using json_type = json_unit;
+  using json_type = detail::json_unit;
 
   json(std::string&& data): j(std::move(data))
   {};
@@ -60,16 +69,6 @@ private:
   json_type j;
   std::unique_ptr<T> obj;
 };
-
-namespace detail {
-
-  template <typename T, typename... Args>
-  std::true_type test_has_method_deserialize(decltype(std::declval<T>().deserialize(std::declval<Args>()...), nullptr));
-
-  template <typename...>
-  std::false_type test_has_method_deserialize(...);
-
-} // namespace detail
 
 template <typename T, typename... Args>
 struct has_method_deserialize: decltype(detail::test_has_method_deserialize<T, Args...>(nullptr)) {};
