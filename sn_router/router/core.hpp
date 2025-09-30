@@ -283,5 +283,7 @@ private:
 } // namespace router
 } // namespace detail
 
+namespace router {
+  using core = router::detail::__router;
+}
 
-using core = router::detail::__router;

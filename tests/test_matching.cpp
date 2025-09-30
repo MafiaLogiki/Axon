@@ -11,7 +11,7 @@ using namespace boost::beast;
 TEST(matching_test, simple_match_test) {
   boost::asio::io_context io;
 
-  auto r = core::create_router(io);
+  auto r = router::core::create_router(io);
   
 
   std::deque<int> d;
