@@ -7,10 +7,9 @@
 #include <string_view>
 #include <nlohmann/json.hpp>
 
-#include "function_traits.hpp"
-#include "extract.hpp"
-#include "nlohmann/json_fwd.hpp"
-#include "path_parser.hpp"
+#include <sn_router/detail/function_traits.hpp>
+#include <sn_router/router/extract/extract.hpp>
+#include <sn_router/detail/path_parser.hpp>
 
 namespace router {
 namespace detail {

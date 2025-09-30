@@ -5,6 +5,8 @@
 #include <type_traits>
 #include <nlohmann/json.hpp>
 
+#include <sn_router/detail/constexpr_string.hpp>
+
 namespace router {
 namespace extract {
 namespace detail {
@@ -68,6 +70,11 @@ struct json {
 private:
   json_type j;
   std::unique_ptr<T> obj;
+};
+
+template <constexpr_string field>
+struct header {
+
 };
 
 template <typename T, typename... Args>

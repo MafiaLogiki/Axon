@@ -7,10 +7,10 @@
 #include <boost/beast/http.hpp>
 #include <type_traits>
 
-#include "constexpr_string.hpp"
-#include "extract.hpp"
-#include "function_traits.hpp"
-#include "value_parser.hpp"
+#include <sn_router/detail/constexpr_string.hpp>
+#include <sn_router/router/extract/extract.hpp>
+#include <sn_router/detail/function_traits.hpp>
+#include <sn_router/detail/value_parser.hpp>
 
 namespace router {
 namespace detail {

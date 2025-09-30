@@ -23,11 +23,17 @@
 #include <map>
 #include <utility>
 
-#include "detail/args_builder.hpp"
-#include "detail/constexpr_string.hpp"
-#include "detail/function_traits.hpp"
-#include "detail/http_connection.hpp"
-#include "detail/path_parser.hpp"
+#include <sn_router/detail/constexpr_string.hpp>
+#include <sn_router/detail/http_connection.hpp>
+#include <sn_router/detail/path_parser.hpp>
+#include <sn_router/detail/value_parser.hpp>
+#include <sn_router/detail/args_builder.hpp>
+
+#ifdef ROUTER_TEST
+  #define PRIVATE_IF_NOT_TEST public
+#else
+  #define PRIVATE_IF_NOT_TEST private
+#endif
 
 
 namespace router {
@@ -139,7 +145,7 @@ private:
     ); 
   }
 
-private:
+PRIVATE_IF_NOT_TEST:
 
   internal_handler_type get_handler(std::string_view requested_url, http::verb method) {
     if (non_parameter_handlers.count(std::make_pair(std::string(requested_url), method))) {
@@ -149,12 +155,13 @@ private:
     return parse_param_handlers(requested_url, method);
   }
 
+private:
   internal_handler_type parse_param_handlers(std::string_view requested_url, http::verb method) {
     for (auto& [data, handler] : path_with_parameter_handlers) {
       const std::string& path = data.first;
       http::verb path_method = data.second;
 
-      if (is_parameter_path_math_url(requested_url, path)) {
+      if (is_parameter_path_math_url(requested_url, path) && path_method == method) {
         return handler;
       }
     }
@@ -252,6 +259,7 @@ public:
     return std::make_shared<__router>(std::move(r));
   }
 
+private:
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
 
