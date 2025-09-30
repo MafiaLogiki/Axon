@@ -4,6 +4,7 @@
 #include <boost/beast/http.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
+#include <boost/core/ignore_unused.hpp>
 #include <string_view>
 #include <nlohmann/json.hpp>
 
@@ -62,6 +63,10 @@ struct argument_creator;
 template<>
 struct argument_creator<http::request<http::dynamic_body>&&> {
   static http::request<http::dynamic_body>&& create(http::request<http::dynamic_body>& req, http::response<http::dynamic_body>& res, std::string_view path) {
+
+    boost::ignore_unused(res);
+    boost::ignore_unused(path);
+
     return std::move(req);
   }
 };
@@ -69,6 +74,9 @@ struct argument_creator<http::request<http::dynamic_body>&&> {
 template<>
 struct argument_creator<http::response<http::dynamic_body>&&> {
   static http::response<http::dynamic_body>& create(http::request<http::dynamic_body>& req, http::response<http::dynamic_body>& res, std::string_view path) {
+    boost::ignore_unused(req);
+    boost::ignore_unused(path);
+
     return res;
   }
 };
@@ -95,6 +103,7 @@ struct argument_creator<router::extract::json<T>> {
 
 template <typename... Args>
 std::tuple<Args...> build_tuple_of_args(http::request<http::dynamic_body>& req, http::response<http::dynamic_body>& res, std::string_view path) {
+  boost::ignore_unused(path);
   return std::make_tuple(argument_creator<Args>::create(req, res, path)...);
 }
 

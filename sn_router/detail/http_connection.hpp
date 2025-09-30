@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/core/ignore_unused.hpp>
 #include <memory>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core.hpp>
@@ -76,6 +77,9 @@ public:
         response_,
         [self](boost::beast::error_code err, std::size_t b)
         {
+          boost::ignore_unused(err);
+          boost::ignore_unused(b);
+
           self->socket_.shutdown(tcp::socket::shutdown_send);
           self->deadline_.cancel();
         });

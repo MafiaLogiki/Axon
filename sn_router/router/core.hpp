@@ -105,8 +105,6 @@ private:
           http::response<http::dynamic_body>& res
         ) 
     {
-      path_types_tuple path_data;
-
       std::string_view requested_url_view = req.target();
       std::string_view path_view = std::string_view(path);
 
@@ -122,7 +120,7 @@ private:
 
       using handler_args = callable_args_t<Handler>;
       
-      auto values_tuple = build_args_from_type_tuple<handler_args>(req, res, path);
+      auto values_tuple = build_args_from_type_tuple<handler_args>(req, res, path_view);
 
       std::apply(h, std::move(values_tuple));
     };
@@ -286,4 +284,4 @@ private:
 } // namespace detail
 
 
-using Router = router::detail::__router;
+using core = router::detail::__router;
