@@ -133,15 +133,6 @@ private:
     }
   }
   
-  void start_http_server() {
-    acceptor.async_accept(
-      [this](boost::beast::error_code ec, boost::asio::ip::tcp::socket socket) {
-          if(!ec)
-            std::make_shared<router::detail::http_connection<__router>>(std::move(socket), *this)->start();
-          start_http_server();
-      }
-    ); 
-  }
 
 PRIVATE_IF_NOT_TEST:
 
@@ -210,31 +201,18 @@ private:
     return true;
   }
 
-  __router(boost::asio::io_context& io,
-         boost::asio::ip::address address,
-         unsigned short port)
-      : io(io), 
-        acceptor(io, {address, port}) 
-  {}
+  __router() = default;
 
 
   friend class router::detail::http_connection<__router>;
 
 public:
 
-  __router(__router&& r)
-    : io(r.io),
-      acceptor(std::move(r.acceptor))
-  {}
+  __router(__router&& r) = default;
 
   template <constexpr_string str, typename Handler>
   void GET(Handler&& h) {
     register_method<str>(http::verb::get, std::forward<Handler>(h));
-  }
-   
-  void serveHTTP() {
-    start_http_server();
-    io.run();
   }
 
   __router& with(middleware_type middleware) {
@@ -250,17 +228,12 @@ public:
     not_found_handler = func;
   }
   
-  static std::shared_ptr<__router> create_router(boost::asio::io_context& io,
-         boost::asio::ip::address address = boost::asio::ip::make_address("0.0.0.0"),
-         unsigned short port = 8080) {
-    __router r(io, address, port);
+  static std::shared_ptr<__router> create_router() {
+    __router r;
     return std::make_shared<__router>(std::move(r));
   }
 
 private:
-  boost::asio::io_context& io;
-  boost::asio::ip::tcp::acceptor acceptor;
-
   std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
 
