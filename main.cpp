@@ -22,7 +22,7 @@ struct data {
   int id;
 
   void deserialize(router::extract::json<data>::json_type& j) {
-     id = j.at("id").get<int>();
+     id = j.get_value<int>("id");
   }
 };
 

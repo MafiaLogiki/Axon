@@ -24,16 +24,37 @@ private:
   value_type data_;
 };
 
+struct json_unit {
+  using json_type = nlohmann::json;
+
+  json_unit(std::string&& data): j(std::move(data)) {}
+  json_unit() = default;
+  json_unit(json_unit&&) = default;
+
+  template <typename T>
+  T get_value(std::string str) {
+    return j.at(str).get<T>();
+  }
+
+private:
+  nlohmann::json j;
+};
+
 template <typename T>
 struct json {
   
-  using json_type = nlohmann::json;
+  using json_type = json_unit;
 
   json(std::string&& data): j(std::move(data))
   {};
 
   json() = default;
   json(json&& other) = default;
+
+  T& deserialize() {
+    obj->deserialize(j);
+    return *obj;
+  }
 
 private:
   json_type j;
