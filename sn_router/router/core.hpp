@@ -153,7 +153,7 @@ private:
       const std::string& path = data.first;
       http::verb path_method = data.second;
 
-      if (is_parameter_path_math_url(requested_url, path) && path_method == method) {
+      if (is_parameter_path_match_url(requested_url, path) && path_method == method) {
         return handler;
       }
     }
@@ -179,7 +179,7 @@ private:
     return segments;
   }
 
-  bool is_parameter_path_math_url(std::string_view requested_url, std::string_view path) {
+  bool is_parameter_path_match_url(std::string_view requested_url, std::string_view path) {
     auto requested_url_view = boost::urls::url_view(requested_url);
     auto requested_url_segments = requested_url_view.segments();
     
@@ -191,6 +191,7 @@ private:
     size_t i = 0;
     for (auto seg : requested_url_segments) {
       if (path_segments[i][0] == '{') {
+        ++i;
         continue;
       }
 

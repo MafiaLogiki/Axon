@@ -61,11 +61,11 @@ TEST(matching_test, match_path_with_parametr) {
   });
 
 
-  http::request<http::dynamic_body>  req2; 
-  http::response<http::dynamic_body> res2; 
-
   http::request<http::dynamic_body>  req; 
   http::response<http::dynamic_body> res; 
+
+  http::request<http::dynamic_body>  req2; 
+  http::response<http::dynamic_body> res2; 
 
   req.target("/test/1/path");
   req2.target("/test/1/path2");
