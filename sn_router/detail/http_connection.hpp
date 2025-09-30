@@ -6,6 +6,7 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 
+#include <sn_router/types.hpp>
 
 namespace router {
 namespace detail {
@@ -21,8 +22,8 @@ class http_connection
   tcp::socket socket_;
   boost::beast::flat_buffer buffer_{8192};
 
-  http::request<http::dynamic_body> request_;
-  http::response<http::dynamic_body> response_;
+  sn::request_type request_;
+  sn::response_type response_;
 
   Router& router_;
 

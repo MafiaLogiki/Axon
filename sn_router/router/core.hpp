@@ -28,6 +28,7 @@
 #include <sn_router/detail/path_parser.hpp>
 #include <sn_router/detail/value_parser.hpp>
 #include <sn_router/detail/args_builder.hpp>
+#include <sn_router/types.hpp>
 
 #ifdef ROUTER_TEST
   #define PRIVATE_IF_NOT_TEST public
@@ -58,10 +59,10 @@ public:
   };
 
   using middleware_type = std::function<void(parameter_storage)>;
-  using not_found_handler_function = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
+  using not_found_handler_function = std::function<void(sn::request_type&&, sn::response_type&)>;
 
 private:
-  using internal_handler_type = std::function<void(http::request<http::dynamic_body>&&, http::response<http::dynamic_body>&)>;
+  using internal_handler_type = std::function<void(sn::request_type&&, sn::response_type&)>;
 
 
   __router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
@@ -101,8 +102,8 @@ private:
                                               global_middlewares = std::vector(global_middleware_storage),
                                               endpoint_middlewares = std::vector(temporary_middleware_storage)]
         (
-          http::request<http::dynamic_body>&& req,
-          http::response<http::dynamic_body>& res
+          sn::request_type&& req,
+          sn::response_type& res
         ) 
     {
       std::string_view requested_url_view = req.target();
@@ -237,7 +238,7 @@ private:
   std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
   std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
 
-  not_found_handler_function not_found_handler = [](http::request<http::dynamic_body>&& req, http::response<http::dynamic_body>& res){
+  not_found_handler_function not_found_handler = [](sn::request_type&& req, sn::response_type& res){
     res.result(http::status::not_found);
     res.version(req.version());
 

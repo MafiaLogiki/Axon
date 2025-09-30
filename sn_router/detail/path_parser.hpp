@@ -11,6 +11,7 @@
 #include <sn_router/router/extract/extract.hpp>
 #include <sn_router/detail/function_traits.hpp>
 #include <sn_router/detail/value_parser.hpp>
+#include <sn_router/types.hpp>
 
 namespace router {
 namespace detail {
@@ -78,7 +79,7 @@ template <constexpr_string str, typename Handler>
 concept invokable_with_path = requires (Handler handler) {
   { std::apply(handler, std::declval<
       tuple_cat_t<
-        std::tuple<const http::request<http::dynamic_body>&, http::response<http::dynamic_body>>, 
+        std::tuple<const sn::request_type&, sn::response_type>, 
         parsed_types<str>>>()) };
 };
 
