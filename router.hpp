@@ -118,7 +118,7 @@ private:
       
       auto values_tuple = build_args_from_type_tuple<handler_args>(req, res, path);
 
-      std::apply(h, values_tuple);
+      std::apply(h, std::move(values_tuple));
     };
     
     temporary_middleware_storage.clear();

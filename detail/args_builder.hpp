@@ -1,5 +1,6 @@
 #pragma once
 
+#include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
@@ -8,6 +9,7 @@
 
 #include "function_traits.hpp"
 #include "extract.hpp"
+#include "nlohmann/json_fwd.hpp"
 #include "path_parser.hpp"
 
 namespace router {
@@ -40,7 +42,7 @@ struct is_argument_valid<http::response<http::dynamic_body>&, std::tuple<Args...
 
 template <typename T, typename... Args>
 struct is_argument_valid<router::extract::json<T>, std::tuple<Args...>>
-  : router::extract::has_method_serialize<T, nlohmann::json&>
+  : router::extract::has_method_deserialize<T, typename router::extract::json<T>::json_type&>
 {};
 
 template <typename tuple, typename... Args>
@@ -86,7 +88,9 @@ struct argument_creator<router::extract::path<Args...>> {
 template<typename T>
 struct argument_creator<router::extract::json<T>> {
   static router::extract::json<T> create(http::request<http::dynamic_body>& req, http::response<http::dynamic_body>& res, std::string_view path) {
-    return {};
+    std::string body_str = boost::beast::buffers_to_string(req.body().data());
+
+    return router::extract::json<T>(std::move(body_str));
   }
 };
 

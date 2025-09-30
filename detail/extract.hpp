@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <nlohmann/json.hpp>
@@ -25,25 +26,32 @@ private:
 
 template <typename T>
 struct json {
-  nlohmann::json j;
+  
+  using json_type = nlohmann::json;
 
-  void serialize(T& obj) {
-    obj = j.template get<T>();
-  }
+  json(std::string&& data): j(std::move(data))
+  {};
+
+  json() = default;
+  json(json&& other) = default;
+
+private:
+  json_type j;
+  std::unique_ptr<T> obj;
 };
 
 namespace detail {
 
   template <typename T, typename... Args>
-  std::true_type test_has_method_serialize(decltype(std::declval<T>().serialize(std::declval<Args>()...), nullptr));
+  std::true_type test_has_method_deserialize(decltype(std::declval<T>().deserialize(std::declval<Args>()...), nullptr));
 
   template <typename...>
-  std::false_type test_has_method_serialize(...);
+  std::false_type test_has_method_deserialize(...);
 
 } // namespace detail
 
 template <typename T, typename... Args>
-struct has_method_serialize: decltype(detail::test_has_method_serialize<T, Args...>(nullptr)) {};
+struct has_method_deserialize: decltype(detail::test_has_method_deserialize<T, Args...>(nullptr)) {};
 
 } // namespace extract
 } // namespace router
@@ -65,4 +73,3 @@ decltype(auto) get(const router::extract::path<Ts...>& p) {
 }
 
 } //namespace std 
-  

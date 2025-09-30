@@ -6,7 +6,6 @@
 #include <boost/url/url_view.hpp>
 #include <iostream>
 
-#include "detail/extract.hpp"
 #include "router.hpp"
 
 using namespace boost::beast;
@@ -21,8 +20,9 @@ void handler2(http::request<http::dynamic_body> req, http::response<http::dynami
 
 struct data {
   int id;
-  void serialize(nlohmann::json& json) {
-     id = json.at("id").get<int>();
+
+  void deserialize(router::extract::json<data>::json_type& j) {
+     id = j.at("id").get<int>();
   }
 };
 
