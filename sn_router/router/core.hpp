@@ -209,7 +209,14 @@ private:
   }
 
   __router() = default;
-
+  
+  explicit __router(std::pmr::polymorphic_allocator<> alloc_)
+    : alloc_(alloc_)
+    , non_parameter_handlers(alloc_)
+    , path_with_parameter_handlers(alloc_)
+    , temporary_middleware_storage(alloc_)
+    , global_middleware_storage(alloc_)
+  {}
 
 public:
 
@@ -233,8 +240,8 @@ public:
     not_found_handler = func;
   }
   
-  static std::shared_ptr<__router> create_router() {
-    __router r;
+  static std::shared_ptr<__router> create_router(std::pmr::polymorphic_allocator<> pmr = {}) {
+    __router r(pmr);
     return std::make_shared<__router>(std::move(r));
   }
 
@@ -257,8 +264,8 @@ private:
     res.prepare_payload(); 
   };
 
-  std::vector<middleware_type> temporary_middleware_storage;
-  std::vector<middleware_type> global_middleware_storage;
+  std::pmr::vector<middleware_type> temporary_middleware_storage;
+  std::pmr::vector<middleware_type> global_middleware_storage;
 };
 
 } // namespace router

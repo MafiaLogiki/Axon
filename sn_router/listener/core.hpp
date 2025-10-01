@@ -18,7 +18,7 @@ public:
   base_listener(boost::asio::io_context& io,
          boost::asio::ip::address address,
          unsigned short port,
-         std::pmr::polymorphic_allocator<> allocator)
+         std::pmr::polymorphic_allocator<> allocator = {})
       : alloc_(allocator),
         io(io), 
         acceptor(io, {address, port}) 
