@@ -4,6 +4,7 @@ set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 add_executable(run_tests
   test_matching.cpp
   test_listener.cpp
+  test_path.cpp
 )
 
 find_package(Boost REQUIRED COMPONENTS url)
