@@ -18,6 +18,7 @@
 #include <cstdlib>
 #include <functional>
 #include <memory>
+#include <memory_resource>
 #include <string_view>
 #include <string>
 #include <tuple>
@@ -238,8 +239,11 @@ public:
   }
 
 private:
-  std::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
-  std::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
+  
+  std::pmr::polymorphic_allocator<> alloc_;
+
+  std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
+  std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
 
   not_found_handler_function not_found_handler = [](sn::request_type&& req, sn::response_type& res){
     res.result(http::status::not_found);

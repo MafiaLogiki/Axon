@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <memory_resource>
 #include <sn_router/types.hpp>
 #include <sn_router/listener/session.hpp>
 #include <boost/asio.hpp>
@@ -16,8 +17,10 @@ class base_listener
 public:
   base_listener(boost::asio::io_context& io,
          boost::asio::ip::address address,
-         unsigned short port)
-      : io(io), 
+         unsigned short port,
+         std::pmr::polymorphic_allocator<> allocator)
+      : alloc_(allocator),
+        io(io), 
         acceptor(io, {address, port}) 
   {}
 
@@ -47,6 +50,8 @@ private:
       }
     ); 
   }
+  
+  std::pmr::polymorphic_allocator<> alloc_;
 
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
