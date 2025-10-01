@@ -1,3 +1,4 @@
+#include "sn_router/types.hpp"
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/message_fwd.hpp>
 #include <deque>
@@ -24,12 +25,11 @@ TEST(matching_test, simple_match_test) {
     d.push_back(2);
   });
 
+  sn::request_type req;
+  sn::response_type res;
 
-  http::request<http::dynamic_body>  req2; 
-  http::response<http::dynamic_body> res2; 
-
-  http::request<http::dynamic_body>  req; 
-  http::response<http::dynamic_body> res; 
+  sn::request_type req2; 
+  sn::response_type res2;
 
   req.target("/test/path");
   req2.target("/test/path2");
@@ -60,12 +60,11 @@ TEST(matching_test, match_path_with_parametr) {
     d.push_back(2);
   });
 
+  sn::request_type req;
+  sn::response_type res;
 
-  http::request<http::dynamic_body>  req; 
-  http::response<http::dynamic_body> res; 
-
-  http::request<http::dynamic_body>  req2; 
-  http::response<http::dynamic_body> res2; 
+  sn::request_type req2; 
+  sn::response_type res2;
 
   req.target("/test/1/path");
   req2.target("/test/1/path2");
