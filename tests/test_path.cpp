@@ -28,7 +28,7 @@ TEST(matching_test, simple_int_path_test) {
   sn::response_type res2;
 
   req.target("/test/1/path");
-  req2.target("/test/2/path2");
+  req2.target("/test/3/path2");
 
   auto h1 = r->get_handler(req.target(), http::verb::get);
   auto h2 = r->get_handler(req2.target(), http::verb::get);
@@ -39,5 +39,5 @@ TEST(matching_test, simple_int_path_test) {
   ASSERT_EQ(d.front(), 1);
   d.pop_front();
 
-  ASSERT_EQ(d.front(), 2);
+  ASSERT_EQ(d.front(), 3);
 }

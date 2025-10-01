@@ -85,6 +85,8 @@ struct argument_creator<sn::response_type&&> {
 template<typename... Args>
 struct argument_creator<router::extract::path<Args...>> {
   static router::extract::path<Args...> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+    
+    boost::ignore_unused(res);
 
     std::tuple<Args...> values;
     parse_path_types<0>(req.target(), path, values);

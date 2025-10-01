@@ -32,7 +32,7 @@ public:
 
   template <constexpr_string str, typename Handler>
   void GET(Handler&& h) {
-    router_.GET<str>(std::forward<Handler>(h));
+    router_.template GET<str>(std::forward<Handler>(h));
   }
 
 private:
