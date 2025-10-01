@@ -13,12 +13,12 @@ using namespace boost::asio::ip;
 using namespace boost::beast;
 
 class http_session
-  : std::enable_shared_from_this<http_session>
+  : public std::enable_shared_from_this<http_session>
 {
 
 public: 
   http_session(tcp::socket socket, sn::application_handler h)
-    : socket_(std::move(socket)), handler_(h)
+    : socket_(std::move(socket)), handler_(std::move(h))
   {}
 
   void start() {
@@ -27,7 +27,7 @@ public:
   }
 
   void read_request() {
-    auto self = this->shared_from_this();
+    auto self = shared_from_this();
     
     http::async_read(
         socket_,
@@ -43,18 +43,16 @@ public:
           if (!err) {
             self->handler_(self->request_, callback);
           }
+
         });
   }
 
   void write_response(sn::response_type res) {
 
-    auto self = this->shared_from_this();
+    auto self = shared_from_this();
+
+    response_ = std::move(res);
     
-    std::stringstream str;
-    str << response_.body().size();
-
-    response_.set(http::field::content_length, str.view());
-
     http::async_write(
         socket_,
         response_,
