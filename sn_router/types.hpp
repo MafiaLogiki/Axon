@@ -1,17 +1,25 @@
 #pragma once
 
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/http/basic_dynamic_body.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/message_fwd.hpp>
+#include <boost/beast/http.hpp>
 #include <functional>
 #include <memory_resource>
 
 namespace sn {
 namespace pmr {
-  using fields = boost::beast::http::basic_fields<std::pmr::polymorphic_allocator<char>>; 
+  using allocator_type = std::pmr::polymorphic_allocator<char>;
+
+  using multi_buffer = boost::beast::basic_multi_buffer<allocator_type>;
+  using dynamic_body = boost::beast::http::basic_dynamic_body<multi_buffer>;
+
+  using fields = boost::beast::http::basic_fields<allocator_type>; 
 } // namespace pmr
   
-  using body_type = boost::beast::http::dynamic_body;
+  using body_type = pmr::dynamic_body;
 
   using request_type = boost::beast::http::request<body_type, pmr::fields>;
   using response_type = boost::beast::http::response<body_type, pmr::fields>;
