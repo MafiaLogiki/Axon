@@ -11,7 +11,7 @@ namespace detail {
   T parse_type_value(std::string_view& requested_url, std::string_view& path);
 
   template <>
-  int parse_type_value<int>(std::string_view& requested_url, std::string_view& path) {
+  inline int parse_type_value<int>(std::string_view& requested_url, std::string_view& path) {
     size_t pos_start = path.find("{");
     size_t pos_end_of_type_cell = path.find("}");
 
@@ -33,7 +33,7 @@ namespace detail {
   }
    
   template <>
-  std::string parse_type_value<std::string>(std::string_view& requested_url, std::string_view& path) {
+  inline std::string parse_type_value<std::string>(std::string_view& requested_url, std::string_view& path) {
     size_t pos_start = path.find("{");
     size_t pos_end_of_type_cell = path.find("}");
 
