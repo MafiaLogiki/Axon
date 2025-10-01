@@ -1,6 +1,3 @@
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
-
 add_executable(run_tests
   test_matching.cpp
   test_listener.cpp
@@ -11,7 +8,7 @@ find_package(Boost REQUIRED COMPONENTS url)
 
 target_link_libraries(run_tests PRIVATE
   router
-  gtest_main
+  GTest::gtest_main
   Boost::url
 )
 

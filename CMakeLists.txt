@@ -9,20 +9,26 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_library(router INTERFACE)
 target_include_directories(router INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-include(FetchContent)
+find_package(nlohmann_json 3.12.0 QUIET)
+if(NOT nlohmann_json_FOUND)
 
-FetchContent_Declare(
-    nlohmann_json
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG        v3.12.0
-    GIT_SHALLOW    TRUE
-)
+  message(STATUS "nlohmann_json not found. Downloading from GitHub.")
 
-FetchContent_MakeAvailable(nlohmann_json)
+  include(FetchContent)
+  FetchContent_Declare(
+      nlohmann_json
+      GIT_REPOSITORY https://github.com/nlohmann/json.git
+      GIT_TAG        v3.12.0 
+      GIT_SHALLOW    TRUE
+  )
+
+  FetchContent_MakeAvailable(nlohmann_json)
+endif()
+
 
 find_package(Boost REQUIRED COMPONENTS url)
 
-target_link_libraries(router INTERFACE 
+target_link_libraries(router INTERFACE
   Boost::url
   nlohmann_json::nlohmann_json
 )
@@ -40,17 +46,25 @@ target_compile_options(router INTERFACE
 
 option(BUILD_TESTING "Build the project's tests" ON)
 
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
-)
-
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
-set(INSTALL_GTEST OFF)
- 
-enable_testing()
-
 if(BUILD_TESTING)
-  FetchContent_MakeAvailable(googletest)
+  enable_testing()
+
+  find_package(GTest QUIET)
+  if(NOT GTest_FOUND)
+
+    message(STATUS "GTest not found. Downloading from GitHub.")
+
+    include(FetchContent)
+    FetchContent_Declare(
+      googletest
+      URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+    )
+
+    set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+    set(INSTALL_GTEST OFF)
+
+    FetchContent_MakeAvailable(googletest)
+  endif()
+
   add_subdirectory(tests)
 endif()
