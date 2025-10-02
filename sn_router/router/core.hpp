@@ -210,14 +210,6 @@ private:
 
   __router() = default;
   
-  explicit __router(std::pmr::polymorphic_allocator<> alloc_)
-    : alloc_(alloc_)
-    , non_parameter_handlers(alloc_)
-    , path_with_parameter_handlers(alloc_)
-    , temporary_middleware_storage(alloc_)
-    , global_middleware_storage(alloc_)
-  {}
-
 public:
 
   __router(__router&& r) = default;
@@ -240,14 +232,12 @@ public:
     not_found_handler = func;
   }
   
-  static std::shared_ptr<__router> create_router(std::pmr::polymorphic_allocator<> pmr = {}) {
-    __router r(pmr);
+  static std::shared_ptr<__router> create_router() {
+    __router r;
     return std::make_shared<__router>(std::move(r));
   }
 
 private:
-  
-  std::pmr::polymorphic_allocator<> alloc_;
 
   std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
   std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;

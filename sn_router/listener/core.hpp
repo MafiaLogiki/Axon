@@ -17,17 +17,15 @@ class base_listener
 public:
   base_listener(boost::asio::io_context& io,
          boost::asio::ip::address address,
-         unsigned short port,
-         std::pmr::polymorphic_allocator<> allocator = {})
-      : alloc_(allocator),
-        io(io), 
+         unsigned short port)
+      : io(io), 
         acceptor(io, {address, port}) 
   {}
 
   base_listener(base_listener&&) = default;
 
   void serveHTTP() {
-    start_http_server();
+    do_accept();
     io.run();
   }
 
@@ -37,7 +35,7 @@ public:
 
 private:
 
-  void start_http_server() {
+  void do_accept() {
 
     auto self = this->shared_from_this();
 
@@ -45,14 +43,12 @@ private:
       [self](boost::beast::error_code ec, boost::asio::ip::tcp::socket socket) {
           if(!ec) {
             std::make_shared<session>(std::move(socket), self->handler)->start();
-            self->start_http_server();
+            self->do_accept();
           }
       }
     ); 
   }
   
-  std::pmr::polymorphic_allocator<> alloc_;
-
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
 

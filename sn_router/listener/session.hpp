@@ -17,12 +17,9 @@ class http_session
 {
 
 public: 
-  http_session(tcp::socket socket, sn::application_handler h, std::pmr::polymorphic_allocator<> alloc)
-    : alloc_(alloc)
-    , socket_(std::move(socket))
-    , request_(sn::request_type::header_type(alloc_), sn::request_type::fields_type(alloc_))
-    , response_(sn::response_type::header_type(alloc_, sn::response_type::fields_type(alloc_)))
-    , handler_(std::move(h))
+  http_session(tcp::socket socket, sn::application_handler h)
+    : socket_(std::move(socket))
+    , handler_(h)
   {}
 
   void start() {
@@ -47,7 +44,6 @@ public:
           if (!err) {
             self->handler_(self->request_, callback);
           }
-
         });
   }
 
@@ -82,10 +78,8 @@ public:
         });
     }
 
-  std::pmr::polymorphic_allocator<> alloc_;
-
   tcp::socket socket_;
-  boost::beast::flat_buffer buffer_{8192};
+  sn::pmr::flat_buffer buffer_;
 
   sn::request_type request_;
   sn::response_type response_;

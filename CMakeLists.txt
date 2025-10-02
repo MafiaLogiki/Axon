@@ -26,7 +26,7 @@ if(NOT nlohmann_json_FOUND)
 endif()
 
 
-find_package(Boost REQUIRED COMPONENTS url)
+find_package(Boost 1.89.0 REQUIRED COMPONENTS url)
 
 target_link_libraries(router INTERFACE
   Boost::url
