@@ -44,3 +44,30 @@ TEST(json_test, simple_json_test) {
   ASSERT_EQ(d.password, "qwerty");
   ASSERT_EQ(d.id, 123);
 }
+
+
+TEST(json_test, incorrect_json_test) {
+  
+  auto r = router::core::create_router();
+  
+  first_test_data d;
+  r->GET<"/api/user">([&d](router::extract::json<first_test_data> j) {
+    d = j.deserialize();
+  });
+
+  std::string json_data_string = "\"username\": \"testuser\", \"password\": \"qwerty\", \"id\": 123}"; 
+
+  sn::request_type req;
+  sn::response_type res;
+
+  boost::beast::ostream(req.body()) << json_data_string;
+  req.target("/api/user");
+
+  auto h = r->get_handler(req.target(), boost::beast::http::verb::get);
+  try {
+    h(std::move(req), res);
+  } catch(std::exception& e) {
+    return;
+  }
+  FAIL() << "Code must throw exception in wrong json case" << std::endl;
+}
