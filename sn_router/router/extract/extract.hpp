@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sn_router/types.hpp"
 #include <memory>
 #include <tuple>
 #include <type_traits>
@@ -75,7 +76,22 @@ private:
 
 template <constexpr_string field>
 struct header {
+  
+  header(sn::request_type& req) {
+    if (req.count(field)) {
+      header_field_value = req[field];
+    }
+  }
 
+  header() = default;
+  header(header&&) = default;
+
+  std::string& get_value() {
+    return header_field_value;
+  }
+
+private:
+  std::string header_field_value;
 };
 
 template <typename T, typename... Args>
