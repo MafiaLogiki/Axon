@@ -219,6 +219,11 @@ public:
     register_method<str>(http::verb::get, std::forward<Handler>(h));
   }
 
+  template <constexpr_string str, typename Handler>
+  void POST(Handler&& h) {
+    register_method<str>(http::verb::post, std::forward<Handler>(h));
+  }
+
   __router& with(middleware_type middleware) {
     temporary_middleware_storage.push_back(middleware);
     return *this;
