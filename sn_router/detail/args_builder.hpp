@@ -98,6 +98,10 @@ struct argument_creator<router::extract::path<Args...>> {
 template<typename T>
 struct argument_creator<router::extract::json<T>> {
   static router::extract::json<T> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+    
+    boost::ignore_unused(res);
+    boost::ignore_unused(path);
+
     std::string body_str = boost::beast::buffers_to_string(req.body().data());
 
     return router::extract::json<T>(std::move(body_str));

@@ -15,7 +15,7 @@ using namespace boost::asio::ip;
 
 TEST(ListenerTest, accept_connection_test) {
   boost::asio::io_context io;
-/*
+
   sn::application_handler fake_app_handler = [](const sn::request_type& req, sn::response_callback_type callback) {
     sn::response_type res{http::status::ok, req.version()};
 
@@ -60,5 +60,4 @@ TEST(ListenerTest, accept_connection_test) {
   if (server_thread.joinable()) {
     server_thread.join();
   }
-  */
 }

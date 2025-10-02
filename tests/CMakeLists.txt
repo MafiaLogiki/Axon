@@ -2,6 +2,7 @@ add_executable(run_tests
   test_matching.cpp
   test_listener.cpp
   test_path.cpp
+  test_json.cpp
 )
 
 find_package(Boost REQUIRED COMPONENTS url)

@@ -21,7 +21,7 @@ std::false_type test_has_method_deserialize(...);
 struct json_unit {
   using json_type = nlohmann::json;
 
-  json_unit(std::string&& data): j(std::move(data)) {}
+  json_unit(std::string&& data): j(nlohmann::json::parse(data)) {}
   json_unit() = default;
   json_unit(json_unit&&) = default;
 
@@ -62,7 +62,8 @@ struct json {
   json() = default;
   json(json&& other) = default;
 
-  T& deserialize() {
+  T deserialize() {
+    obj = std::make_unique<T>();
     obj->deserialize(j);
     return *obj;
   }
