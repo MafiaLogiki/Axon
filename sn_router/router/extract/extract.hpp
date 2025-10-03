@@ -74,12 +74,13 @@ private:
   std::unique_ptr<T> obj;
 };
 
+
 template <constexpr_string field>
 struct header {
   
   header(sn::request_type& req) {
-    if (req.count(field)) {
-      header_field_value = req[field];
+    if (req.count(std::string_view(field))) {
+      header_field_value = req[std::string_view(field)];
     }
   }
 

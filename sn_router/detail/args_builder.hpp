@@ -1,5 +1,6 @@
 #pragma once
 
+#include "sn_router/detail/constexpr_string.hpp"
 #include <boost/beast/core/buffers_to_string.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/http/dynamic_body_fwd.hpp>
@@ -12,6 +13,7 @@
 #include <sn_router/router/extract/extract.hpp>
 #include <sn_router/detail/path_parser.hpp>
 #include <sn_router/types.hpp>
+#include <type_traits>
 
 namespace router {
 namespace detail {
@@ -44,6 +46,12 @@ struct is_argument_valid<sn::response_type&, std::tuple<Args...>>
 template <typename T, typename... Args>
 struct is_argument_valid<router::extract::json<T>, std::tuple<Args...>>
   : router::extract::has_method_deserialize<T, typename router::extract::json<T>::json_type&>
+{};
+
+
+template <constexpr_string str, typename... Args>
+struct is_argument_valid<router::extract::header<str>, std::tuple<Args...>>
+  : std::true_type
 {};
 
 template <typename tuple, typename... Args>
@@ -105,6 +113,17 @@ struct argument_creator<router::extract::json<T>> {
     std::string body_str = boost::beast::buffers_to_string(req.body().data());
 
     return router::extract::json<T>(std::move(body_str));
+  }
+};
+
+template <constexpr_string str>
+struct argument_creator<router::extract::header<str>> {
+  static router::extract::header<str> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+
+    boost::ignore_unused(res);
+    boost::ignore_unused(path);
+
+    return router::extract::header<str>(req);
   }
 };
 
