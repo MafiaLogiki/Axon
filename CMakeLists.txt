@@ -1,13 +1,13 @@
 cmake_minimum_required(VERSION 3.14)
 
-project(router CXX)
+project(axon CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_library(router INTERFACE)
-target_include_directories(router INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+add_library(axon INTERFACE)
+target_include_directories(axon INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 find_package(nlohmann_json 3.12.0 QUIET)
 if(NOT nlohmann_json_FOUND)
@@ -28,12 +28,12 @@ endif()
 
 find_package(Boost 1.89.0 REQUIRED COMPONENTS url)
 
-target_link_libraries(router INTERFACE
+target_link_libraries(axon INTERFACE
   Boost::url
   nlohmann_json::nlohmann_json
 )
 
-target_compile_options(router INTERFACE
+target_compile_options(axon INTERFACE
   $<$<CXX_COMPILER_ID:GNU,Clang>:
     -Wall
     -Wextra

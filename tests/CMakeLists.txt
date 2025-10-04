@@ -9,7 +9,7 @@ add_executable(run_tests
 find_package(Boost REQUIRED COMPONENTS url)
 
 target_link_libraries(run_tests PRIVATE
-  router
+  axon 
   GTest::gtest_main
   Boost::url
 )
