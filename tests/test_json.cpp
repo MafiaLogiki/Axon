@@ -1,12 +1,11 @@
+#include <axon/router/core.hpp>         
 #include <axon/router/extract/extract.hpp>
-#include <axon/types.hpp>
-#include <axon/router/core.hpp>
-
-#include <boost/beast/core/ostream.hpp>
-#include <boost/beast/http/verb.hpp>
-
-#include <gtest/gtest.h>
-#include <string>
+#include <axon/types.hpp>              
+#include <gtest/gtest.h>              
+#include <exception>                 
+#include <ostream>                  
+#include <string>                  
+#include <utility>                
 
 using namespace axon;
 

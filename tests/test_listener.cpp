@@ -1,10 +1,7 @@
 #include <axon/listener/core.hpp>
 #include <axon/types.hpp>
 
-#include <boost/beast/core/ostream.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/url/host_type.hpp>
+#include <boost/beast/core.hpp>
 #include <gtest/gtest.h>
 
 #include <ostream>

@@ -1,9 +1,9 @@
 #pragma once
 
-#include <boost/beast.hpp>
-#include <boost/asio.hpp>
-
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/http/read.hpp>
 #include <boost/url/host_type.hpp>
+
 #include <memory>
 #include <axon/types.hpp>
 

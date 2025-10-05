@@ -1,11 +1,6 @@
 #include <axon/router/core.hpp>
 #include <axon/types.hpp>
 
-#include <boost/beast/http/field.hpp>
-#include <boost/beast/http/status.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-
 #include <gtest/gtest.h>
 
 namespace http = boost::beast::http;

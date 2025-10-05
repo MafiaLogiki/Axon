@@ -1,10 +1,11 @@
 #pragma once
 
 #include <memory>
+
 #include <axon/types.hpp>
 #include <axon/listener/session.hpp>
-#include <boost/asio.hpp>
-#include <boost/beast.hpp>
+
+#include <boost/asio/io_context.hpp>
 
 namespace axon {
 namespace listener {

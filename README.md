@@ -28,6 +28,7 @@ Here is a minimal example of a server with a dynamic path parameter.
 ```cpp
 #include <axon/mux.hpp>
 #include <axon/router/extract/extract.hpp>
+
 #include <iostream>
 
 int main() {
@@ -42,7 +43,7 @@ int main() {
     });
 
     mux.GET<"/">([](axon::response_type& res) {
-        std::ostream os(&res.body());
+        boost::beast::ostream os(&res.body());
         os << "Hello, Axon!";
         res.prepare_payload();
     });

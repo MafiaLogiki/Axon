@@ -2,7 +2,6 @@
 #include <axon/types.hpp>
 
 #include <gtest/gtest.h>
-#include <boost/beast.hpp>
 
 #include <deque>
 
