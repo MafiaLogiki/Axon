@@ -9,6 +9,8 @@
 
 #include <utility>
 
+namespace axon {
+
 template <typename router_engine, typename listener_engine>
 class base_mux {
 public:
@@ -18,9 +20,9 @@ public:
 
   void serveHTTP() {
 
-    sn::application_handler handler = [this](const sn::request_type& req, sn::response_callback_type callback) {
+    application_handler handler = [this](const request_type& req, response_callback_type callback) {
       typename router_engine::handler_type h = router_->get_handler(req.target().data(), req.method());
-      sn::response_type res;
+      response_type res;
 
       h(std::move(req), res); 
 
@@ -44,3 +46,5 @@ private:
 };
 
 using mux = base_mux<router::core, listener::core>;
+
+}

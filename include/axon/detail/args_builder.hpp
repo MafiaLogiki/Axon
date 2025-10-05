@@ -15,6 +15,7 @@
 #include <axon/types.hpp>
 #include <type_traits>
 
+namespace axon {
 namespace router {
 namespace detail {
 
@@ -34,12 +35,12 @@ struct is_argument_valid<router::extract::path<Args...>, std::tuple<Args...>>
 {};
 
 template <typename... Args>
-struct is_argument_valid<sn::request_type&&, std::tuple<Args...>>
+struct is_argument_valid<request_type&&, std::tuple<Args...>>
   : std::true_type
 {};
 
 template <typename... Args>
-struct is_argument_valid<sn::response_type&, std::tuple<Args...>>
+struct is_argument_valid<response_type&, std::tuple<Args...>>
   : std::true_type
 {};
 
@@ -70,8 +71,8 @@ template <typename T>
 struct argument_creator;
 
 template<>
-struct argument_creator<sn::request_type&&> {
-  static sn::request_type&& create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+struct argument_creator<request_type&&> {
+  static request_type&& create(request_type& req, response_type& res, std::string_view path) {
 
     boost::ignore_unused(res);
     boost::ignore_unused(path);
@@ -81,8 +82,8 @@ struct argument_creator<sn::request_type&&> {
 };
 
 template<>
-struct argument_creator<sn::response_type&&> {
-  static sn::response_type& create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+struct argument_creator<response_type&&> {
+  static response_type& create(request_type& req, response_type& res, std::string_view path) {
     boost::ignore_unused(req);
     boost::ignore_unused(path);
 
@@ -92,7 +93,7 @@ struct argument_creator<sn::response_type&&> {
 
 template<typename... Args>
 struct argument_creator<router::extract::path<Args...>> {
-  static router::extract::path<Args...> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+  static router::extract::path<Args...> create(request_type& req, response_type& res, std::string_view path) {
     
     boost::ignore_unused(res);
 
@@ -105,7 +106,7 @@ struct argument_creator<router::extract::path<Args...>> {
 
 template<typename T>
 struct argument_creator<router::extract::json<T>> {
-  static router::extract::json<T> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+  static router::extract::json<T> create(request_type& req, response_type& res, std::string_view path) {
     
     boost::ignore_unused(res);
     boost::ignore_unused(path);
@@ -118,7 +119,7 @@ struct argument_creator<router::extract::json<T>> {
 
 template <constexpr_string str>
 struct argument_creator<router::extract::header<str>> {
-  static router::extract::header<str> create(sn::request_type& req, sn::response_type& res, std::string_view path) {
+  static router::extract::header<str> create(request_type& req, response_type& res, std::string_view path) {
 
     boost::ignore_unused(res);
     boost::ignore_unused(path);
@@ -128,13 +129,13 @@ struct argument_creator<router::extract::header<str>> {
 };
 
 template <typename... Args>
-std::tuple<Args...> build_tuple_of_args(sn::request_type& req, sn::response_type& res, std::string_view path) {
+std::tuple<Args...> build_tuple_of_args(request_type& req, response_type& res, std::string_view path) {
   boost::ignore_unused(path);
   return std::make_tuple(argument_creator<Args>::create(req, res, path)...);
 }
 
 template <typename tuple_of_args>
-auto build_args_from_type_tuple(sn::request_type& req, sn::response_type& res, std::string_view path) {
+auto build_args_from_type_tuple(request_type& req, response_type& res, std::string_view path) {
   auto unpacker = [&]<typename... Args>(std::tuple<Args...>){
     return build_tuple_of_args<Args...>(req, res, path);
   };
@@ -144,3 +145,5 @@ auto build_args_from_type_tuple(sn::request_type& req, sn::response_type& res, s
 
 } // namespace router
 } // namespace detail 
+} // namespace axon
+

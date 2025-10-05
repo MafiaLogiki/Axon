@@ -6,6 +6,7 @@
 #include <boost/asio.hpp>
 #include <boost/beast.hpp>
 
+namespace axon {
 namespace listener {
 namespace detail {
 
@@ -28,7 +29,7 @@ public:
     io.run();
   }
 
-  void set_application_handler(sn::application_handler h) {
+  void set_application_handler(application_handler h) {
     handler = h;
   } 
 
@@ -51,12 +52,15 @@ private:
   boost::asio::io_context& io;
   boost::asio::ip::tcp::acceptor acceptor;
 
-  sn::application_handler handler;
+  application_handler handler;
 };
 
 } // namespace detail
 } // namespace listener
+} // namespace axon 
 
+namespace axon {
 namespace listener {
   using core = listener::detail::base_listener<listener::http_session>;
+}
 }

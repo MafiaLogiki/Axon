@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 #include <string>
 
+using namespace axon;
+
 struct first_test_data {
   std::string username;
   std::string password;
@@ -32,8 +34,8 @@ TEST(json_test, simple_json_test) {
 
   std::string json_data_string = "{\"username\": \"testuser\", \"password\": \"qwerty\", \"id\": 123}"; 
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
   boost::beast::ostream(req.body()) << json_data_string;
   req.target("/api/user");
@@ -59,8 +61,8 @@ TEST(json_test, incorrect_json_test) {
 
   std::string json_data_string = "\"username\": \"testuser\", \"password\": \"qwerty\", \"id\": 123}"; 
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
   boost::beast::ostream(req.body()) << json_data_string;
   req.target("/api/user");

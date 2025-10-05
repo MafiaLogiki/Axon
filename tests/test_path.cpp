@@ -7,6 +7,7 @@
 #include <deque>
 
 using namespace boost::beast;
+using namespace axon;
 
 TEST(matching_test, simple_int_path_test) {
 
@@ -22,11 +23,11 @@ TEST(matching_test, simple_int_path_test) {
     d.push_back(std::get<0>(p));
   });
 
-  sn::request_type  req; 
-  sn::response_type res; 
+  request_type  req; 
+  response_type res; 
 
-  sn::request_type  req2; 
-  sn::response_type res2;
+  request_type  req2; 
+  response_type res2;
 
   req.target("/test/1/path");
   req2.target("/test/3/path2");
@@ -60,11 +61,11 @@ TEST(matching_test, multy_variable_path_test) {
     d.push_back(std::get<1>(p));
   });
 
-  sn::request_type  req; 
-  sn::response_type res; 
+  request_type  req; 
+  response_type res; 
 
-  sn::request_type  req2; 
-  sn::response_type res2;
+  request_type  req2; 
+  response_type res2;
 
   req.target("/test/1/path/2");
   req2.target("/test/3/path2/4");

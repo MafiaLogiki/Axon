@@ -4,6 +4,7 @@
 #include <string>
 #include <charconv>
 
+namespace axon {
 namespace router {
 namespace detail {
 
@@ -65,3 +66,5 @@ namespace detail {
   
 } // namespace router 
 } // namespace detail
+} // namespace axon
+  

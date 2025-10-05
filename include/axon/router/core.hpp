@@ -1,20 +1,11 @@
 #pragma once
 
 #include <algorithm>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/error.hpp>
 #include <boost/beast/core/ostream.hpp>
-#include <boost/beast/core/flat_buffer.hpp>
-#include <boost/beast/http/dynamic_body_fwd.hpp>
-#include <boost/beast/http/message_fwd.hpp>
-#include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
-#include <boost/core/ignore_unused.hpp>
-#include <boost/url.hpp>
 #include <boost/url/segments_view.hpp>
 #include <boost/url/url_view.hpp>
+
 #include <cstdlib>
 #include <functional>
 #include <memory>
@@ -22,7 +13,6 @@
 #include <string>
 #include <tuple>
 #include <cstdio>
-#include <boost/beast/http.hpp>
 #include <map>
 #include <utility>
 
@@ -38,7 +28,7 @@
   #define PRIVATE_IF_NOT_TEST private
 #endif
 
-
+namespace axon{
 namespace router {
 namespace detail {
 
@@ -61,12 +51,12 @@ public:
   };
 
   using middleware_type = std::function<void(parameter_storage)>;
-  using not_found_handler_function = std::function<void(sn::request_type&&, sn::response_type&)>;
+  using not_found_handler_function = std::function<void(request_type&&, response_type&)>;
 
-  using handler_type = std::function<void(sn::request_type&&, sn::response_type&)>;
+  using handler_type = std::function<void(request_type&&, response_type&)>;
 
 private:
-  using internal_handler_type = std::function<void(sn::request_type&&, sn::response_type&)>;
+  using internal_handler_type = std::function<void(request_type&&, response_type&)>;
 
 
   __router::parameter_storage parse_types_for_middleware(std::string_view requested_url, std::string_view path) {
@@ -106,8 +96,8 @@ private:
                                               global_middlewares = std::vector(global_middleware_storage),
                                               endpoint_middlewares = std::vector(temporary_middleware_storage)]
         (
-          sn::request_type&& req,
-          sn::response_type& res
+          request_type&& req,
+          response_type& res
         ) 
     {
       std::string_view requested_url_view = req.target();
@@ -246,7 +236,7 @@ private:
   std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> non_parameter_handlers;
   std::pmr::map<std::pair<std::string, http::verb>, internal_handler_type> path_with_parameter_handlers;
 
-  not_found_handler_function not_found_handler = [](sn::request_type&& req, sn::response_type& res){
+  not_found_handler_function not_found_handler = [](request_type&& req, response_type& res){
     res.result(http::status::not_found);
     res.version(req.version());
 
@@ -262,10 +252,13 @@ private:
   std::pmr::vector<middleware_type> global_middleware_storage;
 };
 
+} // namespace axon
 } // namespace router
 } // namespace detail
 
+namespace axon {
 namespace router {
   using core = router::detail::__router;
+}
 }
 

@@ -7,6 +7,7 @@
 #include <memory>
 #include <axon/types.hpp>
 
+namespace axon {
 namespace listener {
 
 using namespace boost::asio::ip;
@@ -17,7 +18,7 @@ class http_session
 {
 
 public: 
-  http_session(tcp::socket socket, sn::application_handler h)
+  http_session(tcp::socket socket, application_handler h)
     : socket_(std::move(socket))
     , handler_(h)
   {}
@@ -37,7 +38,7 @@ public:
         [self](boost::beast::error_code err, size_t bytes) {
           boost::ignore_unused(bytes);
 
-          sn::response_callback_type callback = [self](sn::response_type res) {
+          response_callback_type callback = [self](response_type res) {
             self->write_response(std::move(res));
           };
 
@@ -47,7 +48,7 @@ public:
         });
   }
 
-  void write_response(sn::response_type res) {
+  void write_response(response_type res) {
 
     auto self = shared_from_this();
 
@@ -79,17 +80,18 @@ public:
     }
 
   tcp::socket socket_;
-  sn::pmr::flat_buffer buffer_;
+  pmr::flat_buffer buffer_;
 
-  sn::request_type request_;
-  sn::response_type response_;
+  request_type request_;
+  response_type response_;
 
-  sn::application_handler handler_;
+  application_handler handler_;
 
   boost::asio::basic_waitable_timer<std::chrono::steady_clock> deadline_ {
     socket_.get_executor(), std::chrono::seconds(60)
   };
 };
 
-}
+} // namespace listener
+} // namespace axon
 

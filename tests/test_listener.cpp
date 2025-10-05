@@ -7,18 +7,19 @@
 #include <boost/url/host_type.hpp>
 #include <gtest/gtest.h>
 
-#include <memory>
 #include <ostream>
 #include <thread>
 
 using namespace boost::beast;
 using namespace boost::asio::ip;
 
+using namespace axon;
+
 TEST(ListenerTest, accept_connection_test) {
   boost::asio::io_context io;
 
-  sn::application_handler fake_app_handler = [](const sn::request_type& req, sn::response_callback_type callback) {
-    sn::response_type res{http::status::ok, req.version()};
+  application_handler fake_app_handler = [](const request_type& req, response_callback_type callback) {
+    response_type res{http::status::ok, req.version()};
 
     boost::beast::ostream(res.body()) << "Hello from test";
     res.prepare_payload();
@@ -26,12 +27,12 @@ TEST(ListenerTest, accept_connection_test) {
     callback(res);
   };
 
-  std::shared_ptr<listener::core> listener = std::make_shared<listener::core>(io, boost::asio::ip::make_address("127.0.0.1"), 8080);
-  listener->set_application_handler(fake_app_handler);
+  std::shared_ptr<listener::core> l = std::make_shared<listener::core>(io, boost::asio::ip::make_address("127.0.0.1"), 8080);
+  l->set_application_handler(fake_app_handler);
 
-  std::thread server_thread([](auto listener) {
-    listener->serveHTTP();
-  }, listener);
+  std::thread server_thread([](auto l) {
+    l->serveHTTP();
+  }, l);
 
   try {
     boost::asio::io_context client_ioc;

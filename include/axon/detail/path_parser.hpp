@@ -13,6 +13,7 @@
 #include <axon/detail/value_parser.hpp>
 #include <axon/types.hpp>
 
+namespace axon {
 namespace router {
 namespace detail {
 
@@ -79,7 +80,7 @@ template <constexpr_string str, typename Handler>
 concept invokable_with_path = requires (Handler handler) {
   { std::apply(handler, std::declval<
       tuple_cat_t<
-        std::tuple<const sn::request_type&, sn::response_type>, 
+        std::tuple<const request_type&, response_type>, 
         parsed_types<str>>>()) };
 };
 
@@ -88,3 +89,5 @@ concept match_path = invokable_with_path<str, Handler>;
 
 } // naespace router
 } // namespace detail 
+} // namespace axon
+

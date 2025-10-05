@@ -6,8 +6,9 @@
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 
-#include <sn_router/types.hpp>
+#include <axon/types.hpp>
 
+namespace axon {
 namespace router {
 namespace detail {
 
@@ -22,8 +23,8 @@ class http_connection
   tcp::socket socket_;
   boost::beast::flat_buffer buffer_{8192};
 
-  sn::request_type request_;
-  sn::response_type response_;
+  request_type request_;
+  response_type response_;
 
   Router& router_;
 
@@ -101,3 +102,4 @@ public:
 
 } // namespace __detail
 } // namespace router 
+} // namespace axon

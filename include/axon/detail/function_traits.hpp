@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <tuple>
 
+namespace axon {
 namespace router {
 namespace detail {
 
@@ -48,3 +49,5 @@ using callable_args_t = typename function_traits<T>::args_tuple;
 
 } // namespace detail
 } // namespace router
+} // namespace axon
+

@@ -3,6 +3,8 @@
 #include <cstddef>
 #include <string_view>
 
+namespace axon {
+
 template <size_t N>
 struct constexpr_string {
   char data[N];
@@ -43,3 +45,5 @@ struct constexpr_string {
 
 template <size_t N>
 constexpr_string(const char (&)[N]) -> constexpr_string<N>;
+
+} // namespace axon

@@ -9,14 +9,15 @@
 #include <gtest/gtest.h>
 
 namespace http = boost::beast::http;
+using namespace axon;
 
 TEST(Header, simple_header)
 {
 
   auto r = router::core::create_router();
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
   req.method(http::verb::get);
   req.target("/");
@@ -41,8 +42,8 @@ TEST(Header, empty_header)
 
   auto r = router::core::create_router();
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
   req.method(http::verb::get);
   req.target("/");

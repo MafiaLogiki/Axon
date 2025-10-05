@@ -8,7 +8,7 @@
 #include <gtest/gtest.h>
 #include <boost/beast.hpp>
 
-
+using namespace axon;
 using namespace boost::beast;
 
 TEST(matching_test, simple_match_test) {
@@ -27,11 +27,11 @@ TEST(matching_test, simple_match_test) {
     d.push_back(2);
   });
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
-  sn::request_type req2; 
-  sn::response_type res2;
+  request_type req2; 
+  response_type res2;
 
   req.target("/test/path");
   req2.target("/test/path2");
@@ -62,11 +62,11 @@ TEST(matching_test, match_path_with_parametr) {
     d.push_back(2);
   });
 
-  sn::request_type req;
-  sn::response_type res;
+  request_type req;
+  response_type res;
 
-  sn::request_type req2; 
-  sn::response_type res2;
+  request_type req2; 
+  response_type res2;
 
   req.target("/test/1/path");
   req2.target("/test/1/path2");
