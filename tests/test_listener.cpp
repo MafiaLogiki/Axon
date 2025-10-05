@@ -26,7 +26,7 @@ TEST(ListenerTest, accept_connection_test) {
     callback(res);
   };
 
-  std::shared_ptr<listener::core> listener = std::make_shared<listener::core>(io, boost::asio::ip::make_address("127.0.0.1"), 80);
+  std::shared_ptr<listener::core> listener = std::make_shared<listener::core>(io, boost::asio::ip::make_address("127.0.0.1"), 8080);
   listener->set_application_handler(fake_app_handler);
 
   std::thread server_thread([](auto listener) {
@@ -37,7 +37,7 @@ TEST(ListenerTest, accept_connection_test) {
     boost::asio::io_context client_ioc;
     tcp::socket client_socket(client_ioc);
 
-    client_socket.connect(tcp::endpoint{net::ip::make_address("127.0.0.1"), 80});
+    client_socket.connect(tcp::endpoint{net::ip::make_address("127.0.0.1"), 8080});
     http::write(client_socket, http::request<http::empty_body>{http::verb::get, "/", 11});
 
     boost::beast::flat_buffer buffer{8192};
