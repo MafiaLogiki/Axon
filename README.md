@@ -64,10 +64,10 @@ This is a header-only library, so no pre-compilation is required.
 
 **Requirements:**
 *   C++20 compatible compiler (GCC 10+, Clang 12+)
-*   Boost (version 1.74+), with components:
+*   Boost (version 1.89.0+), with components:
     *   `Boost.Asio`
     *   `Boost.Beast`
-*   CMake (version 3.15+)
+*   CMake (version 3.14+)
 
 **Build Instructions:**
 
