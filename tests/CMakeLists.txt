@@ -19,3 +19,6 @@ target_compile_definitions(run_tests PRIVATE ROUTER_TEST)
 target_compile_options(run_tests PRIVATE
   $<$<CONFIG:Debug>: -g3 -O0>
 )
+
+include(GoogleTest)
+gtest_discover_tests(run_tests)

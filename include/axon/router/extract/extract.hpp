@@ -65,7 +65,7 @@ struct json {
   json(json&& other) = default;
 
   T deserialize() {
-    // obj = std::make_unique<T>();
+    obj = std::make_unique<T>();
     obj->deserialize(j);
     return *obj;
   }
