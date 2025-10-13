@@ -47,8 +47,33 @@ public:
     );
   }
 
-  void on_read() {
+  void on_read(error_code ec, std::size_t bytes_transferred)
+  {
+      boost::ignore_unused(bytes_transferred);
 
+      if(ec == websocket::error::closed)
+          return;
+
+      if(ec)
+        return
+
+      ws_.text(ws_.got_text());
+      ws_.async_write(
+          buf_.data(),
+          bind_front_handler(
+              &websocket_session::on_write,
+              shared_from_this()));
+  }
+
+  void on_write(error_code ec, std::size_t bytes_transferred){
+      boost::ignore_unused(bytes_transferred);
+
+      if(ec)
+          return;
+
+      buf_.consume(buf_.size());
+
+      do_read();
   }
 
 private:
